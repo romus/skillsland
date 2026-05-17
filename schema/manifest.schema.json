@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.com/skillsland/manifest.schema.json",
+  "$id": "https://raw.githubusercontent.com/romus/skillsland/main/schema/manifest.schema.json",
   "title": "Skillsland manifest",
   "type": "object",
   "required": ["name", "version", "skills"],
