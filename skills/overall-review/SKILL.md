@@ -1,7 +1,7 @@
 ---
 name: overall-review
 description: This skill should be used when the user asks to "review my changes", "do an overall review", "review this branch", "code review against main", or invokes "/overall-review" (optionally with a profile name like "/overall-review security", "/overall-review performance", "/overall-review bug-fix"). Interactively asks which base branch to compare against, picks a review profile (universal, bug-fix, feature, refactor, research, performance, security, migration, docs) either from an explicit argument or by auto-detecting from the diff, runs the matching reviewers in parallel, and outputs a single table of findings in the user's language. Does NOT modify code, does NOT commit, does NOT propose to apply fixes — review and report only.
-version: 0.2.0
+version: 0.2.1
 targets:
   - claude-code
   - codex
@@ -15,12 +15,12 @@ tags: [git, review, quality]
 
 # Overall Review — multi-perspective code review against a chosen base branch
 
-You are running a code review on the changes in the current git branch against a base branch the user picks. Follow the six steps below in order. Do not deviate, do not shortcut.
+You are running a code review on the changes in the current git branch against a base branch the user picks. Follow the seven steps below in order. Do not deviate, do not shortcut.
 
 **Hard rules for the entire run:**
 - Read-only with respect to code. Do not edit files, do not stage, do not commit, do not run formatters/linters/tests that mutate state.
 - Report problems only — no positive observations, no "looks good" commentary, no offer to apply fixes.
-- Final output is ONE markdown table plus ONE summary line, in the language of the user's most recent request (default English if unclear). Nothing else after the table except that summary line.
+- Final output is per-finding blocks plus ONE summary line, in the language of the user's most recent request (default English if unclear). Nothing else after the summary line.
 
 ---
 
@@ -107,7 +107,7 @@ For every finding returned by every reviewer:
 
 1. **Re-read the code at the cited location.** Pull at least 20–30 lines of surrounding context. Verify the issue is real and not a misreading of the diff.
 2. **Discard false positives** — issues that don't exist, are already mitigated, or are working as intended.
-3. **Deduplicate.** If two reviewers reported the same `file:line` and the same underlying issue, merge into one row. Keep both reviewer names in the `Reviewer` column comma-separated.
+3. **Deduplicate.** If two reviewers reported the same `file:line` and the same underlying issue, merge into one block. List both reviewer names comma-separated in the block header.
 4. **Assign severity**, one of:
    - `critical` — production data loss, security breach, hard crash on common input, broken contract that ships.
    - `major` — wrong behavior in plausible cases, missing tests on a risky change, regression risk, performance cliff under realistic load.
@@ -118,25 +118,35 @@ Pre-existing issues that a reviewer surfaced are still valid; include them. Do n
 
 ---
 
-## Step 7 — Output the table (this is the entire user-facing reply)
+## Step 7 — Output the findings (this is the entire user-facing reply)
 
-Output **only** a markdown table followed by a single summary line. No preamble, no recap of what you did, no offer to apply fixes — just the table and the summary line.
+Output **only** the per-finding blocks followed by a single summary line. No preamble, no recap of what you did, no offer to apply fixes — just the blocks and the summary line. This format is intentional: it renders readably in both Markdown viewers (Claude Code) and plain-text terminals (Codex CLI), because markdown tables collapse into unreadable pipe-noise without a renderer.
 
-**Language:** translate the column headers, issue text, fix text, and summary line into the language of the user's most recent message. If the user's language is unclear, use English. File paths and code identifiers stay verbatim.
+**Language:** translate the field labels (`Issue`, `Fix`) and the summary line into the language of the user's most recent message. If the user's language is unclear, use English. File paths, code identifiers, severity names, and reviewer names stay verbatim.
 
-**Columns:**
+**Block format** — one block per finding, blank line between blocks:
 
 ```
-| Reviewer | Severity | File:Line | Issue | Fix |
+[<n>] <severity> · <reviewer> · <file:line>
+    Issue: <one-line description of the problem>
+    Fix:   <one-line description of the fix>
 ```
 
-**Sort order:** `critical` → `major` → `minor` → `nit`. Within a severity bucket, sort alphabetically by reviewer name, then by file path.
+- `<n>` — 1-based finding number, sequential across the whole output.
+- `<severity>` — one of `critical`, `major`, `minor`, `nit` (lowercase, verbatim).
+- `<reviewer>` — reviewer name; if a finding was merged from multiple reviewers via dedup (Step 6), list them comma-separated (e.g. `quality, security-audit`).
+- `<file:line>` — exact file path and line number, verbatim.
+- Separator between header fields is the middle-dot character `·` (U+00B7), surrounded by single spaces.
+- Indent `Issue:` and `Fix:` lines by 4 spaces. Pad `Fix:` with 3 spaces after the colon so the content column visually aligns with `Issue:` content.
+- Keep Issue and Fix to one line each — condense long descriptions; do not wrap.
 
-**Summary line** (after the table, one line, in the user's language):
+**Sort order:** `critical` → `major` → `minor` → `nit`. Within a severity bucket, sort alphabetically by reviewer name, then by file path. Numbering follows the final sorted order.
+
+**Summary line** (after the last block, separated by a blank line, in the user's language):
 
 > `<N> issues across <M> reviewers — profile: <profile-name>`
 
-If zero issues:
+If zero issues, skip the blocks entirely and output only:
 
 > `No issues found — profile: <profile-name>`
 
