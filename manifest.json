@@ -1,0 +1,15 @@
+{
+  "$schema": "./schema/manifest.schema.json",
+  "name": "skillsland",
+  "version": "0.1.0",
+  "skills": [
+    {
+      "name": "overall-review",
+      "path": "skills/overall-review",
+      "version": "0.1.0",
+      "description": "Interactively pick a base branch and run a structured code review of the diff.",
+      "targets": ["claude-code", "codex"],
+      "tags": ["git", "review", "quality"]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/skillsland/manifest.schema.json",
+  "title": "Skillsland manifest",
+  "type": "object",
+  "required": ["name", "version", "skills"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": { "type": "string", "minLength": 1 },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+" },
+    "skills": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/skill" }
+    }
+  },
+  "$defs": {
+    "skill": {
+      "type": "object",
+      "required": ["name", "path", "version", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^skills/[^/]+$"
+        },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+" },
+        "description": { "type": "string", "minLength": 1 },
+        "targets": {
+          "type": "array",
+          "items": { "enum": ["claude-code", "codex"] },
+          "uniqueItems": true,
+          "default": ["claude-code", "codex"]
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}
