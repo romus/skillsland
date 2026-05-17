@@ -37,7 +37,7 @@ The CLI also exposes `npx skills list`, `npx skills update`, `npx skills remove`
 
 | Name | Description |
 |---|---|
-| [`overall-review`](skills/overall-review/) | Interactively pick a base branch and run a structured code review of the diff. |
+| [`overall-review`](skills/overall-review/) | Multi-perspective code review of the current branch against a base you pick. Selects one of 9 profiles (universal / bug-fix / feature / refactor / research / performance / security / migration / docs) and runs the matching reviewers in parallel. Full docs and reviewer breakdown: [skills/overall-review/README.md](skills/overall-review/README.md). |
 
 ## Repo layout
 

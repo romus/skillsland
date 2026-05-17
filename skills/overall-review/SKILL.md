@@ -1,6 +1,6 @@
 ---
 name: overall-review
-description: This skill should be used when the user asks to "review my changes", "do an overall review", "review this branch", "code review against main", or invokes "/overall-review" (optionally with a profile name like "/overall-review security", "/overall-review performance", "/overall-review bug-fix"). Interactively asks which base branch to compare against, picks a review profile (universal, bug-fix, feature, refactor, research, performance, security, migration, docs) either from an explicit argument or by auto-detecting from the diff, runs the matching reviewers in parallel, and outputs a single table of findings in the user's language. Does NOT modify code, does NOT commit, does NOT propose to apply fixes — review and report only.
+description: This skill should be used when the user asks to "review my changes", "do an overall review", "review this branch", "code review against main", or invokes "/overall-review" (optionally with a profile name like "/overall-review security", "/overall-review performance", "/overall-review bug-fix"). Interactively asks which base branch to compare against, picks a review profile (universal, bug-fix, feature, refactor, research, performance, security, migration, docs) either from an explicit argument or by auto-detecting from the diff, runs the matching reviewers in parallel, and outputs the findings as per-finding blocks in the user's language. Does NOT modify code, does NOT commit, does NOT propose to apply fixes — review and report only.
 version: 0.2.1
 targets:
   - claude-code
