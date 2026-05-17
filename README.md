@@ -6,7 +6,7 @@ or Codex CLI with a single command.
 ## Install a skill
 
 ```bash
-npx skills add https://github.com/<user>/skillsland --skill <skill-name>
+npx skills add https://github.com/romus/skillsland --skill <skill-name>
 ```
 
 Common flags the installer accepts:
