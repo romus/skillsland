@@ -5,20 +5,31 @@ or Codex CLI with a single command.
 
 ## Install a skill
 
+This catalogue is consumed by the [`skills` CLI from vercel-labs](https://github.com/vercel-labs/skills) (`npx skills`). It works with 55+ agents — Claude Code, Codex, Cursor, Gemini CLI, Warp, OpenCode, GitHub Copilot, and many more — and offers an interactive picker for both the target agent and the install scope.
+
 ```bash
-npx skills add https://github.com/romus/skillsland --skill <skill-name>
+# Interactive — pick the skill(s), agent(s), and scope from a menu
+npx skills add romus/skillsland
+
+# Non-interactive — install one skill to specific agents, no prompts
+npx skills add romus/skillsland -s overall-review -a claude-code -y
+
+# Install every skill from this repo to every detected agent
+npx skills add romus/skillsland --all
 ```
 
-Common flags the installer accepts:
+Useful flags (full list at [vercel-labs/skills](https://github.com/vercel-labs/skills)):
 
-| Flag | Default | Meaning |
-|---|---|---|
-| `--skill <name>` | — | Which skill from this repo to install (required). |
-| `--target claude\|codex\|both` | `both` | Which agent to install for. |
-| `--scope user\|project` | `user` | Install globally (`~/.claude/skills/`) or per-project (`.claude/skills/`). |
+| Flag | Meaning |
+|---|---|
+| `-s, --skill <names...>` | Which skill(s) from this repo to install. Omit to pick interactively. |
+| `-a, --agent <agents...>` | Target agent(s) by name (e.g. `claude-code`). Omit to pick from a menu. |
+| `-g, --global` | Install globally (e.g. `~/.claude/skills/`) instead of per-project (`.claude/skills/`, the default). |
+| `--copy` | Copy files instead of symlinking. |
+| `-y, --yes` | Skip confirmation prompts. |
+| `--all` | Install all skills to all detected agents, no prompts. |
 
-> The `skills` CLI itself lives in a separate npm package; this repo is content
-> only. Any installer that follows the manifest contract below works.
+The CLI also exposes `npx skills list`, `npx skills update`, `npx skills remove`, and `npx skills find <query>` — see the upstream README for details.
 
 ## Available skills
 
@@ -67,19 +78,6 @@ scripts/validate-manifest.mjs  # CI validator (no deps)
    ```bash
    node scripts/validate-manifest.mjs
    ```
-
-## Manual install (no CLI)
-
-```bash
-# Claude Code, global
-cp -r skills/overall-review ~/.claude/skills/
-
-# Codex, global
-cp -r skills/overall-review ~/.codex/skills/
-
-# Project-local
-mkdir -p .claude/skills && cp -r skills/overall-review .claude/skills/
-```
 
 ## License
 
