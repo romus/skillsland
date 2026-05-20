@@ -33,7 +33,7 @@ The CLI also exposes `npx skills find <query>` for discovery and `npx skills lis
 
 ## Update installed skills
 
-`npx skills update` re-fetches skills you've already installed and refreshes them in place. By default it prompts for scope; `-y` auto-detects it (project when run inside a project, otherwise global).
+`npx skills update` re-fetches skills you've already installed and refreshes them in place. By default it prompts for scope; `-y` skips that prompt — using `-g`/`-p` if given, otherwise auto-detecting (project when run inside a project, else global).
 
 ```bash
 # Update every installed skill (interactive scope prompt)
@@ -53,7 +53,7 @@ npx skills update -g -y
 |---|---|
 | `-g, --global` | Update only globally-installed skills. |
 | `-p, --project` | Update only project-installed skills. |
-| `-y, --yes` | Skip the scope prompt (auto-detect: project in a project dir, else global). |
+| `-y, --yes` | Skip the scope prompt. With `-g`/`-p` it just suppresses the prompt for that scope; on its own it auto-detects (project in a project dir, else global). |
 
 ## Remove a skill
 
@@ -71,6 +71,9 @@ npx skills rm overall-review
 
 # Remove from global scope instead of project
 npx skills remove overall-review -g
+
+# Remove one skill from a specific agent only
+npx skills remove -s overall-review -a claude-code
 
 # Remove all project skills from every agent, no prompts (add -g for global)
 npx skills remove --all
