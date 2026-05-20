@@ -29,11 +29,11 @@ Useful flags (full list at [vercel-labs/skills](https://github.com/vercel-labs/s
 | `-y, --yes` | Skip confirmation prompts. |
 | `--all` | Install all skills to all detected agents, no prompts. |
 
-The CLI also exposes `npx skills find <query>` for discovery — see the upstream README for details.
+The CLI also exposes `npx skills find <query>` for discovery and `npx skills list` (alias `ls`) to see what's already installed — see the upstream README for details.
 
 ## Update installed skills
 
-`npx skills update` re-fetches skills you've already installed and refreshes them in place.
+`npx skills update` re-fetches skills you've already installed and refreshes them in place. By default it prompts for scope; `-y` auto-detects it (project when run inside a project, otherwise global).
 
 ```bash
 # Update every installed skill (interactive scope prompt)
@@ -43,7 +43,7 @@ npx skills update
 npx skills update overall-review
 
 # Update several at once
-npx skills update overall-review some-other-skill
+npx skills update overall-review <other-skill>
 
 # Scope to global installs only, no prompts
 npx skills update -g -y
@@ -53,7 +53,7 @@ npx skills update -g -y
 |---|---|
 | `-g, --global` | Update only globally-installed skills. |
 | `-p, --project` | Update only project-installed skills. |
-| `-y, --yes` | Skip the scope prompt (auto-detects scope). |
+| `-y, --yes` | Skip the scope prompt (auto-detect: project in a project dir, else global). |
 
 ## Remove a skill
 
@@ -72,13 +72,13 @@ npx skills rm overall-review
 # Remove from global scope instead of project
 npx skills remove overall-review -g
 
-# Remove everything from every agent, no prompts
+# Remove all project skills from every agent, no prompts (add -g for global)
 npx skills remove --all
 ```
 
 | Flag | Meaning |
 |---|---|
-| `-g, --global` | Remove from global scope instead of project (the default). |
+| `-g, --global` | Remove from global scope instead of the default project scope. |
 | `-a, --agent <agents...>` | Target specific agents (`'*'` for all). |
 | `-s, --skill <names...>` | Skills to remove (`'*'` for all). |
 | `-y, --yes` | Skip confirmation prompts. |
