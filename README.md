@@ -29,7 +29,65 @@ Useful flags (full list at [vercel-labs/skills](https://github.com/vercel-labs/s
 | `-y, --yes` | Skip confirmation prompts. |
 | `--all` | Install all skills to all detected agents, no prompts. |
 
-The CLI also exposes `npx skills list`, `npx skills update`, `npx skills remove`, and `npx skills find <query>` — see the upstream README for details.
+The CLI also exposes `npx skills find <query>` for discovery and `npx skills list` (alias `ls`) to see what's already installed — see the upstream README for details.
+
+## Update installed skills
+
+`npx skills update` re-fetches skills you've already installed and refreshes them in place. By default it prompts for scope; `-y` skips that prompt — using `-g`/`-p` if given, otherwise auto-detecting (project when run inside a project, else global).
+
+```bash
+# Update every installed skill (interactive scope prompt)
+npx skills update
+
+# Update one skill by name
+npx skills update overall-review
+
+# Update several at once
+npx skills update overall-review <other-skill>
+
+# Scope to global installs only, no prompts
+npx skills update -g -y
+```
+
+| Flag | Meaning |
+|---|---|
+| `-g, --global` | Update only globally-installed skills. |
+| `-p, --project` | Update only project-installed skills. |
+| `-y, --yes` | Skip the scope prompt. With `-g`/`-p` it just suppresses the prompt for that scope; on its own it auto-detects (project in a project dir, else global). |
+
+## Remove a skill
+
+`npx skills remove` (alias `rm`) uninstalls skills. By default it targets project scope.
+
+```bash
+# Interactive — pick what to remove from the installed list
+npx skills remove
+
+# Remove a specific skill
+npx skills remove overall-review
+
+# Same, using the alias
+npx skills rm overall-review
+
+# Remove from global scope instead of project
+npx skills remove overall-review -g
+
+# Remove one skill from a specific agent only
+npx skills remove -s overall-review -a claude-code
+
+# Remove all project skills from every agent, no prompts (add -g for global)
+npx skills remove --all
+```
+
+| Flag | Meaning |
+|---|---|
+| `-g, --global` | Remove from global scope instead of the default project scope. |
+| `-a, --agent <agents...>` | Target specific agents (`'*'` for all). |
+| `-s, --skill <names...>` | Skills to remove (`'*'` for all). |
+| `-y, --yes` | Skip confirmation prompts. |
+| `--all` | Shorthand for `--skill '*' --agent '*' -y`. |
+
+To see what's currently installed first, use `npx skills list` (alias `ls`); add `-g` for global or `-a <agent>` to filter by agent.
 
 ## Available skills
 
