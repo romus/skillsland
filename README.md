@@ -96,6 +96,7 @@ To see what's currently installed first, use `npx skills list` (alias `ls`); add
 | Name | Description |
 |---|---|
 | [`overall-review`](skills/overall-review/) | Multi-perspective code review of the current branch against a base you pick. Selects one of 9 profiles (universal / bug-fix / feature / refactor / research / performance / security / migration / docs) and runs the matching reviewers in parallel. Full docs and reviewer breakdown: [skills/overall-review/README.md](skills/overall-review/README.md). |
+| [`gitlab-review-comments`](skills/gitlab-review-comments/) | Posts `/overall-review` findings as inline comments on a GitLab MR (positioned diff discussions), with preview/confirm, per-run selection of findings (by number and/or severity), idempotent re-runs, and a general-note fallback for lines outside the diff. Detects glab CLI / GitLab MCP / REST. Full docs: [skills/gitlab-review-comments/README.md](skills/gitlab-review-comments/README.md). |
 
 ## Repo layout
 
