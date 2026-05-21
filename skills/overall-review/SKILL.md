@@ -1,7 +1,7 @@
 ---
 name: overall-review
 description: This skill should be used when the user asks to "review my changes", "do an overall review", "review this branch", "code review against main", or invokes "/overall-review" (optionally with a profile name like "/overall-review security", "/overall-review performance", "/overall-review bug-fix"). Interactively asks which base branch to compare against, picks a review profile (universal, bug-fix, feature, refactor, research, performance, security, migration, docs) either from an explicit argument or by auto-detecting from the diff, runs the matching reviewers in parallel, and outputs the findings as per-finding blocks in the user's language. Does NOT modify code, does NOT commit, does NOT propose to apply fixes — review and report only.
-version: 0.2.1
+version: 0.3.0
 targets:
   - claude-code
   - codex
@@ -79,13 +79,15 @@ A "profile" is a fixed list of reviewers to run. See `references/profiles.md` fo
 
 2. **Otherwise, auto-detect from the diff** using the rules in `references/profiles.md` (ordered triggers based on changed paths, file types, and commit messages). Fallback: `universal`.
 
-3. **Announce the chosen profile** before continuing. Print exactly one line in the user's language, e.g. `Profile: security — auth middleware changes detected`. Then proceed to Step 5.
+3. **Apply add-on reviewers.** After the base profile is chosen (whether explicit or auto-detected), consult the **Add-on reviewers** section of `references/profiles.md` and append any matching add-on reviewer(s) to the profile's reviewer list — do not drop any base reviewer. The most common case: a diff that contains a schema/SQL migration but is mostly application code keeps its base profile and gains the `migration-safety` reviewer (so `*.sql` no longer collapses the whole review into the `migration` profile).
+
+4. **Announce the chosen profile** before continuing. Print exactly one line in the user's language, e.g. `Profile: security — auth middleware changes detected`. If add-on reviewers were applied, name them with a `+`, e.g. `Profile: feature + migration-safety — new endpoint with a schema migration`. Then proceed to Step 5.
 
 ---
 
 ## Step 5 — Run the reviewers for the selected profile
 
-Read `references/profiles.md` to get the list of reviewers for the chosen profile. For each reviewer in that list, read `references/reviewers/<reviewer-name>.md` to get its prompt verbatim.
+Read `references/profiles.md` to get the list of reviewers for the chosen profile, plus any add-on reviewers selected in Step 4. For each reviewer in that combined list, read `references/reviewers/<reviewer-name>.md` to get its prompt verbatim.
 
 **Execution mode — pick one based on your runtime:**
 
@@ -145,6 +147,8 @@ Output **only** the per-finding blocks followed by a single summary line. No pre
 **Summary line** (after the last block, separated by a blank line, in the user's language):
 
 > `<N> issues across <M> reviewers — profile: <profile-name>`
+
+`<profile-name>` is the base profile, with any add-on reviewers appended via `+`, exactly as announced in Step 4 (e.g. `feature + migration-safety`).
 
 If zero issues, skip the blocks entirely and output only:
 

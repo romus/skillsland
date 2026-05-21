@@ -18,8 +18,8 @@ The skill prompts for the base branch interactively (offers `main`/`master`, cur
 1. **Collect base-branch candidates** via `scripts/list-base-branches.sh`.
 2. **Ask the user** which base to diff against.
 3. **Compute** `git merge-base`, `git diff`, and `git log <base>..HEAD` as shared context.
-4. **Pick a profile** — explicit argument wins; otherwise auto-detect from the diff (paths, file types, commit messages).
-5. **Run the profile's reviewers in parallel** — one sub-agent per reviewer in Claude Code; same prompt in Codex with a push to split into parallel sub-agents (or sequentially with a clean lens-switch as fallback).
+4. **Pick a profile** — explicit argument wins; otherwise auto-detect from the diff (paths, file types, commit messages). Then layer on any matching add-on reviewers (e.g. `migration-safety` when a schema change rides along with app code).
+5. **Run the profile's reviewers (plus any add-ons) in parallel** — one sub-agent per reviewer in Claude Code; same prompt in Codex with a push to split into parallel sub-agents (or sequentially with a clean lens-switch as fallback).
 6. **Consolidate**: re-read each cited location, discard false positives, deduplicate, assign severity (`critical`/`major`/`minor`/`nit`).
 7. **Output** per-finding blocks + one summary line. That's the entire reply.
 
@@ -36,10 +36,17 @@ Each profile is a fixed list of reviewers. Pick a profile by explicit argument (
 | `research`    | research-completeness, evidence-quality, documentation                     | Design docs, ADRs, RFC drafts                           |
 | `performance` | performance, quality, testing, dead-code                                   | Hot loops, caches, async boundaries, N+1, large data    |
 | `security`    | security-audit, quality, testing, error-handling, dead-code                | Auth/crypto/secrets/session changes; dependency-only    |
-| `migration`   | migration-safety, quality, testing, dependency-audit, dead-code            | Schema migrations, `*.sql`, model column add/drop/type  |
+| `migration`   | migration-safety, quality, testing, dependency-audit, dead-code            | Migration-dominated diffs (only schema/migration files) |
 | `docs`        | documentation                                                              | Only `*.md` / `docs/` changed                           |
 
 Synonyms accepted on the command line: `bug`/`fix` → `bug-fix`, `perf` → `performance`, `sec` → `security`, `doc` → `docs`, `feat` → `feature`, `mig` → `migration`, `ref` → `refactor`, `res` → `research`, `uni`/`all` → `universal`.
+
+### Add-on reviewers
+
+Some signals add a single lens on top of the base profile instead of switching the whole profile. The add-on reviewer is appended to the base profile's reviewer list (no base reviewer is dropped), and the run is announced as `<base> + <add-on>` (e.g. `feature + migration-safety`):
+
+- **`migration-safety`** — added when a diff touches schema/migration artifacts (schema-DDL `*.sql`, ORM column add/drop/type changes, migration directories) but is *not* migration-dominated. This is why a stray `.sql` inside a feature diff no longer collapses the whole review into the `migration` profile — you keep the general review and gain the safety lens.
+- **`dependency-audit`** — added when dependency manifests change alongside other code (the dependency-only case stays a full `security` variant).
 
 ## Reviewers
 
