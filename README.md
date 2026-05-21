@@ -1,7 +1,18 @@
 # skillsland
 
-A catalogue of reusable agent skills, designed to be installed into Claude Code
-or Codex CLI with a single command.
+A catalogue of reusable agent skills. A skill is a prompt plus bundled resources
+(scripts, reference docs) that teaches your coding agent a repeatable workflow —
+like running a multi-perspective code review. Install any of them into Claude Code,
+Codex, and 55+ other agents with a single command.
+
+## Available skills
+
+<!-- Keep this table in sync with manifest.json -->
+
+| Name | Description |
+|---|---|
+| [`overall-review`](skills/overall-review/) | Multi-perspective code review of the current branch against a base you pick. Selects one of 9 profiles (universal / bug-fix / feature / refactor / research / performance / security / migration / docs) and runs the matching reviewers in parallel. Full docs and reviewer breakdown: [skills/overall-review/README.md](skills/overall-review/README.md). |
+| [`gitlab-review-comments`](skills/gitlab-review-comments/) | Posts `/overall-review` findings as inline comments on a GitLab MR (positioned diff discussions), with preview/confirm, per-run selection of findings (by number and/or severity), idempotent re-runs, and a general-note fallback for lines outside the diff. Detects glab CLI / GitLab MCP / REST. Full docs: [skills/gitlab-review-comments/README.md](skills/gitlab-review-comments/README.md). |
 
 ## Install a skill
 
@@ -88,15 +99,6 @@ npx skills remove --all
 | `--all` | Shorthand for `--skill '*' --agent '*' -y`. |
 
 To see what's currently installed first, use `npx skills list` (alias `ls`); add `-g` for global or `-a <agent>` to filter by agent.
-
-## Available skills
-
-<!-- Keep this table in sync with manifest.json -->
-
-| Name | Description |
-|---|---|
-| [`overall-review`](skills/overall-review/) | Multi-perspective code review of the current branch against a base you pick. Selects one of 9 profiles (universal / bug-fix / feature / refactor / research / performance / security / migration / docs) and runs the matching reviewers in parallel. Full docs and reviewer breakdown: [skills/overall-review/README.md](skills/overall-review/README.md). |
-| [`gitlab-review-comments`](skills/gitlab-review-comments/) | Posts `/overall-review` findings as inline comments on a GitLab MR (positioned diff discussions), with preview/confirm, per-run selection of findings (by number and/or severity), idempotent re-runs, and a general-note fallback for lines outside the diff. Detects glab CLI / GitLab MCP / REST. Full docs: [skills/gitlab-review-comments/README.md](skills/gitlab-review-comments/README.md). |
 
 ## Repo layout
 

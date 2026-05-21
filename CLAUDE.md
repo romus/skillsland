@@ -25,6 +25,8 @@ Runs in the GitHub Actions CI on every push to `main` and every PR (`.github/wor
 
 `schema/manifest.schema.json` describes the manifest shape (referenced via `$schema` for editor hints); the validator itself doesn't use it — it does its own structural checks plus the frontmatter cross-check the schema can't express.
 
+What the validator does **not** check: `README.md`'s **Available skills** table (near the top) and its **Repo layout** block are maintained by hand. Adding, renaming, or re-describing a skill means updating that table in lock-step too — there's a `<!-- Keep this table in sync with manifest.json -->` marker above it, but nothing in CI enforces it, so a stale table ships silently.
+
 ## Skill anatomy
 
 A skill is a directory `skills/<name>/` containing:
