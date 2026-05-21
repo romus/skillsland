@@ -10,6 +10,14 @@
       "description": "Interactively pick a base branch, pick a review profile (universal/bug-fix/feature/refactor/research/performance/security/migration/docs), and run the matching reviewers in parallel against the diff. Outputs the findings as per-finding blocks.",
       "targets": ["claude-code", "codex"],
       "tags": ["git", "review", "quality"]
+    },
+    {
+      "name": "gitlab-review-comments",
+      "path": "skills/gitlab-review-comments",
+      "version": "0.1.0",
+      "description": "Post /overall-review findings as inline diff comments on a GitLab merge request, with preview/confirm, per-run selection of findings (by number and/or severity), idempotent re-runs, and general-note fallback for lines outside the diff.",
+      "targets": ["claude-code", "codex"],
+      "tags": ["git", "gitlab", "review", "merge-request", "code-review"]
     }
   ]
 }
