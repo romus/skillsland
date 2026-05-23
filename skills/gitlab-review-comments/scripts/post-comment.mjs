@@ -1,6 +1,11 @@
 #!/usr/bin/env node
-// post-comment.mjs — post overall-review findings to a GitLab MR as discussions.
+// post-comment.mjs — post overall-review findings to a GitLab MR.
 // REST transport for the gitlab-review-comments skill. No deps (Node 20+ fetch).
+//
+// By default it creates PENDING DRAFT NOTES (GitLab's "Start a review" flow):
+// the notes are not published — the user reviews them in the GitLab UI and
+// clicks "Submit review" themselves. This script NEVER publishes/submits drafts.
+// Pass "draft": false to post published discussions immediately instead.
 //
 // Reads a job document on stdin; reads the token from GITLAB_TOKEN in the
 // ENVIRONMENT — never from argv, never logged, never echoed. This is the only
@@ -15,6 +20,7 @@
 //     "host": "gitlab.com",          // optional; GITLAB_HOST env overrides
 //     "project": "group/sub/repo",   // path (URL-encoded here) or numeric id
 //     "mr_iid": 42,
+//     "draft": true,                 // optional, default true (draft notes)
 //     "dry_run": false,
 //     "comments": [
 //       {"fp":"ab12cd34","file":"src/a.ts","line":18,"body":"...","force_general":false}
@@ -22,13 +28,14 @@
 //     "mr": {                        // optional; inject to skip GETs (tests/offline)
 //       "diff_refs": {"base_sha":"..","start_sha":"..","head_sha":".."},
 //       "diffs": [{"old_path":"..","new_path":"..","diff":"@@ .."}],
-//       "discussions": [ /* raw GitLab discussions */ ]
+//       "discussions": [ /* raw GitLab discussions */ ],
+//       "draft_notes": [ /* raw GitLab draft notes: {note, position} */ ]
 //     }
 //   }
 //
 // Output (stdout): {"results":[{fp,file,line,anchor,reason,status,...}],"summary":{...}}
 //   anchor ∈ inline-added | inline-context | general
-//   status ∈ posted | skipped | dry-run | failed
+//   status ∈ drafted | posted | skipped | dry-run | failed
 // Exit: 0 (all ok/skipped/dry-run), 1 (any failed), 2 (fatal misconfig).
 
 import { readFileSync } from "node:fs";
@@ -66,6 +73,7 @@ if (!job.project || !job.mr_iid) die("job must include project and mr_iid");
 const base = resolveBaseUrl(process.env.GITLAB_HOST || job.host);
 const pid = encodeURIComponent(String(job.project));
 const iid = job.mr_iid;
+const draft = job.draft !== false; // default: create pending draft notes
 
 async function apiGet(path) {
   const res = await fetch(`${base}${path}`, { headers: { "PRIVATE-TOKEN": token } });
@@ -105,6 +113,14 @@ let discussions = job.mr?.discussions;
 if (!discussions) {
   try { discussions = await getPaged(`/projects/${pid}/merge_requests/${iid}/discussions`); }
   catch (e) { die(`fetch MR discussions failed: ${e.message}`); }
+}
+
+// In draft mode, also dedupe against existing pending draft notes (a finding may
+// already be drafted from a prior run, or already published as a discussion).
+let draftNotes = job.mr?.draft_notes;
+if (draft && !draftNotes) {
+  try { draftNotes = await getPaged(`/projects/${pid}/merge_requests/${iid}/draft_notes`); }
+  catch (e) { die(`fetch MR draft notes failed: ${e.message}`); }
 }
 
 // --- classify every new-file line in the diff ------------------------------
@@ -147,6 +163,13 @@ for (const disc of discussions) {
     existingSigs.add(signature(note.position, body));
   }
 }
+// Draft notes are a flat list; each carries its body in `note` (not `body`).
+for (const dn of draftNotes ?? []) {
+  const body = dn.note ?? "";
+  const m = body.match(MARKER_RE);
+  if (m) existingFps.add(m[1].toLowerCase());
+  existingSigs.add(signature(dn.position, body));
+}
 
 // --- post (or dry-run) each comment ----------------------------------------
 const results = [];
@@ -182,7 +205,8 @@ for (const c of job.comments ?? []) {
 
   try {
     const params = new URLSearchParams();
-    params.set("body", body);
+    // Draft notes carry their body in `note`; published discussions use `body`.
+    params.set(draft ? "note" : "body", body);
     if (position) {
       params.set("position[position_type]", "text");
       params.set("position[base_sha]", diffRefs.base_sha);
@@ -193,7 +217,8 @@ for (const c of job.comments ?? []) {
       if (position.new_line != null) params.set("position[new_line]", String(position.new_line));
       if (position.old_line != null) params.set("position[old_line]", String(position.old_line));
     }
-    const res = await fetch(`${base}/projects/${pid}/merge_requests/${iid}/discussions`, {
+    const endpoint = draft ? "draft_notes" : "discussions";
+    const res = await fetch(`${base}/projects/${pid}/merge_requests/${iid}/${endpoint}`, {
       method: "POST",
       headers: { "PRIVATE-TOKEN": token, "Content-Type": "application/x-www-form-urlencoded" },
       body: params.toString(),
@@ -203,10 +228,14 @@ for (const c of job.comments ?? []) {
       results.push({ ...base_row, status: "failed", http_status: res.status, error: text.slice(0, 300) });
       continue;
     }
-    const disc = await res.json();
+    const out = await res.json();
     existingFps.add(fp.toLowerCase());
     existingSigs.add(sig);
-    results.push({ ...base_row, status: "posted", discussion_id: disc.id, note_id: disc.notes?.[0]?.id });
+    // Draft create returns a single draft-note object; discussion create returns
+    // a discussion with a notes[] array.
+    results.push(draft
+      ? { ...base_row, status: "drafted", draft_note_id: out.id }
+      : { ...base_row, status: "posted", discussion_id: out.id, note_id: out.notes?.[0]?.id });
   } catch (e) {
     results.push({ ...base_row, status: "failed", error: String(e?.message || e) });
   }
@@ -214,11 +243,13 @@ for (const c of job.comments ?? []) {
 
 const count = (pred) => results.filter(pred).length;
 const summary = {
+  drafted: count((r) => r.status === "drafted"),
   posted: count((r) => r.status === "posted"),
   skipped: count((r) => r.status === "skipped"),
   failed: count((r) => r.status === "failed"),
   "dry-run": count((r) => r.status === "dry-run"),
   fallback: count((r) => r.anchor === "general" && r.status !== "skipped"),
+  draft,
   dry_run: !!job.dry_run,
 };
 

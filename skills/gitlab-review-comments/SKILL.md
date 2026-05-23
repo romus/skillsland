@@ -1,7 +1,7 @@
 ---
 name: gitlab-review-comments
-description: This skill should be used when the user asks to "post the review to GitLab", "comment on the MR", "push review comments to GitLab", "add the findings as inline comments", or invokes "/gitlab-review-comments". Takes the per-finding blocks produced by /overall-review and posts them as inline diff comments (positioned discussions) on the matching GitLab Merge Request, with a mandatory preview-and-confirm gate, a per-run selection of which findings to post (explicit finding numbers and/or a severity threshold), idempotent re-runs, and a general-note fallback for lines outside the MR diff. Detects transport (glab CLI, GitLab MCP, then REST). Read-only on local code; the only external write is creating MR comments after explicit confirmation.
-version: 0.1.0
+description: This skill should be used when the user asks to "post the review to GitLab", "comment on the MR", "push review comments to GitLab", "add the findings as inline comments", or invokes "/gitlab-review-comments". Takes the per-finding blocks produced by /overall-review and adds them to the matching GitLab Merge Request as pending draft review notes — inline on the diff where possible — phrased in a suggestive register; you eyeball them in the GitLab UI and click "Submit review" to publish. Mandatory preview-and-confirm gate, per-run selection of which findings to post (explicit finding numbers and/or a severity threshold), idempotent re-runs, and a general-note fallback for lines outside the MR diff. Detects transport (glab CLI, GitLab MCP, then REST). Read-only on local code; the only external write is creating draft notes — it never publishes or submits the review.
+version: 0.2.0
 targets:
   - claude-code
   - codex
@@ -13,14 +13,15 @@ allowed-tools:
 tags: [git, gitlab, review, merge-request, code-review]
 ---
 
-# GitLab Review Comments — post overall-review findings onto a Merge Request
+# GitLab Review Comments — draft overall-review findings onto a Merge Request
 
-You take the findings that `/overall-review` produced in this conversation and post them as comments on the matching GitLab Merge Request — inline on the right `file:line` where possible. Follow the steps in order.
+You take the findings that `/overall-review` produced in this conversation and add them to the matching GitLab Merge Request as **pending draft review notes** — inline on the right `file:line` where possible. The notes are *not* published: the user reviews them in the GitLab UI and clicks **Submit review** to publish. Follow the steps in order.
 
 **Hard rules for the entire run:**
-- **Read-only on local code.** Do not edit, stage, or commit anything. The only external write is creating MR comments, and only after the Step 7 confirmation gate.
+- **Read-only on local code.** Do not edit, stage, or commit anything. The only external write is creating **draft** MR notes, and only after the Step 7 confirmation gate.
+- **Never submit or publish the review.** You create draft notes only. Never call the publish/`bulk_publish` endpoint or any "submit review" action — submission is always a manual user action in the GitLab UI. This second pair of eyes (the user's, in GitLab) is the whole point.
 - **Never handle the token in the open.** Do not ask the user to paste a token into the chat, do not echo it, do not log it, do not pass it as a command argument. If a token value ever appears, redact it. Auth flows through glab/MCP, or through `GITLAB_TOKEN` in the environment (read inside the poster script only).
-- **No finding is dropped silently.** Every selected finding is either posted inline, posted as a general-note fallback, skipped as a duplicate, or reported as unverified — and the final report says which.
+- **No finding is dropped silently.** Every selected finding is either drafted inline, drafted as a general-note fallback, skipped as a duplicate, or reported as unverified — and the final report says which.
 
 ---
 
@@ -70,7 +71,7 @@ See `references/gitlab-api.md` for the exact glab and REST mechanics.
   - 0 results → ask the user for the MR IID or URL. >1 result → list them and ask which.
 - If the remote is not a GitLab host (e.g. a GitHub `origin`) or detection fails, ask the user for the project path and MR IID directly.
 
-Hold the resolved `host · project · !<iid> · "<title>"` for the Step 7 gate.
+Hold the resolved `host · project · !<iid> · "<title>"` and the MR web URL (`https://<host>/<project>/-/merge_requests/<iid>`) for the Step 7 gate and the Step 9 report.
 
 ---
 
@@ -96,50 +97,56 @@ For each selected finding:
    - On the **REST** path the poster does this classification itself (it fetches `/diffs`); you pass it `{fp, file, line, body}` and read the resulting `anchor`/`reason`.
    - On the **glab/MCP** path, fetch the MR diff yourself (`glab api ".../merge_requests/<iid>/diffs"`) and apply the same rule to build each position.
 
-Compute a stable fingerprint per finding, `fp = sha8(file|line|issue)` (first 8 hex of SHA-256), used for idempotency. Render each comment body as:
+Compute a stable fingerprint per finding, `fp = sha8(file|line|issue)` (first 8 hex of SHA-256), used for idempotency. Render each comment body in a **suggestive, collaborative register** — "this could be a problem; here's how it could be fixed" — never a verdict:
 
 ```
 **<severity> · <reviewer>** — overall-review
-Issue: <issue>
-Fix: <fix>
+<suggestive issue label>: <issue>
+<suggestive fix label>: <fix>
 ```
+
+- Use suggestive labels **in the same language as the finding text**. Examples — RU: `Возможная проблема:` / `Как можно поправить:` · EN: `Potential issue:` / `Suggested fix:`.
+- **Keep it lean.** Header + those two short lines, and the `<issue>`/`<fix>` text **verbatim** from overall-review. Do not add extra commentary, hedging, or prose — short comments are the goal. Do not add a "draft" tag in the text; GitLab already badges pending notes.
 
 ---
 
 ## Step 6 — Build the preview
 
-For every surviving finding, show exactly what will happen — plain-text blocks, one per line, **no Markdown tables** (they collapse in plain terminals):
+For every surviving finding, show exactly what will happen — plain-text blocks, one per line, **no Markdown tables** (they collapse in plain terminals). Everything is a draft note:
 
 ```
-[1] critical · security-audit · auth/login.py:42  → inline (added line)
-[2] minor · testing · src/db.ts:90               → inline (context line)
-[3] major · regression · src/legacy.ts:12        → general note (line outside MR diff)
-[4] nit · quality · src/db.ts:5                   → skip (already posted)
+[1] critical · security-audit · auth/login.py:42  → inline draft (added line)
+[2] minor · testing · src/db.ts:90               → inline draft (context line)
+[3] major · regression · src/legacy.ts:12        → general draft note (line outside MR diff)
+[4] nit · quality · src/db.ts:5                   → skip (already drafted)
 ```
 
 ---
 
 ## Step 7 — Confirmation gate (mandatory)
 
-Show the preview together with the resolved target: `host · project · !<iid> · "<title>"`. Posting publishes to an external service and is hard to undo, so require an explicit choice:
+Show the preview together with the resolved target: `host · project · !<iid> · "<title>"` and the MR web URL. Creating draft notes still writes to an external service, so require an explicit choice:
 
-- **Claude Code:** `AskUserQuestion` — "Post all", "Dry-run only", "Cancel".
+- **Claude Code:** `AskUserQuestion` — "Create draft notes", "Dry-run only", "Cancel".
 - **Codex / plain CLI:** numbered stdin prompt with the same three choices.
 
-Dry-run is always available: it runs the full pipeline (including dedupe) but makes no writes. Do not proceed to Step 8 without an explicit confirmation.
+Make clear these land as **pending draft notes** that the user reviews and submits later in GitLab — this skill never publishes them. Dry-run is always available: it runs the full pipeline (including dedupe) but makes no writes. Do not proceed to Step 8 without an explicit confirmation.
 
 ---
 
-## Step 8 — Post
+## Step 8 — Create the draft notes
 
-- **glab** — one `glab api --method POST ".../discussions" --form ...` call per comment (full form in `references/gitlab-api.md`; use `--form`, never `-f`/`-F`). General-note fallback: only `--form "body=..."`.
-- **MCP** — call the discovered create-discussion tool with the structured position fields; for a fallback, omit the position.
+Everything below creates **draft notes** (`POST .../draft_notes`, whose body field is `note`) — never published discussions. See `references/gitlab-api.md` for the exact mechanics.
+
+- **glab** — one `glab api --method POST ".../draft_notes" --form "note=..." --form "position[...]=..."` call per comment (full form in `references/gitlab-api.md`; use `--form`, never `-f`/`-F`). General-note fallback: only `--form "note=..."`.
+- **MCP** — discover a draft-note creation tool (a tool name containing `draft` together with `note`/`create`) and call it with the structured position fields; for a fallback, omit the position. **If the connected MCP server exposes no draft-note tool, do not silently post a published discussion instead** — fall back to the REST path (if `GITLAB_TOKEN` is set) or glab; if neither is available, tell the user the MCP server can't create drafts and offer Dry-run or Cancel.
 - **REST** — pipe a job document into the poster, with `GITLAB_TOKEN` already exported by the user:
 
   ```bash
   node "${SKILL_DIR:-$(dirname "$0")}/scripts/post-comment.mjs" <<'JOB'
   {
     "host": "<host>", "project": "<group/sub/repo>", "mr_iid": <iid>,
+    "draft": true,
     "dry_run": false,
     "comments": [
       {"fp": "<sha8>", "file": "<path>", "line": <n>, "body": "<body>"}
@@ -148,38 +155,41 @@ Dry-run is always available: it runs the full pipeline (including dedupe) but ma
   JOB
   ```
 
-  The poster fetches diff_refs, classifies lines, dedupes against existing discussions, and posts (or, with `"dry_run": true`, reports without writing).
+  The poster fetches diff_refs, classifies lines, dedupes against existing **draft notes and discussions**, and creates draft notes (or, with `"dry_run": true`, reports without writing).
 
-For glab/MCP, fetch the MR discussions yourself first and skip any finding whose `fp` already appears, so re-runs stay idempotent.
+For glab/MCP, fetch the MR's draft notes *and* discussions yourself first and skip any finding whose `fp` already appears, so re-runs stay idempotent.
 
 ---
 
 ## Step 9 — Report (this is the entire user-facing reply)
 
-Plain-text, terminal-renderable, no tables. Group by outcome and end with a summary line:
+Plain-text, terminal-renderable, no tables. These are **drafts** — nothing is published yet. Lead with that, group by outcome, and end with the submit reminder + the MR URL:
 
 ```
-Posted inline (2):
+Drafted — NOT yet submitted. Review them in GitLab and click "Submit review" to publish.
+
+Drafted inline (2):
   [1] critical · security-audit · auth/login.py:42 → !87
   [2] minor · testing · src/db.ts:90 (context) → !87
 
-Fell back to general note (1):
+Drafted as general note (1):
   [3] major · regression · src/legacy.ts:12 — line outside MR diff
 
-Skipped, already posted (1):
+Skipped, already drafted (1):
   [4] nit · quality · src/db.ts:5
 
-Could not verify, not posted (0): —
+Could not verify, not drafted (0): —
 
 Summary: 2 inline, 1 general note, 1 dup-skipped, 0 unverified — MR !87 (group/sub/repo)
+Submit at: https://<host>/<project>/-/merge_requests/87
 ```
 
-For a dry-run, use the same layout under a `DRY RUN — nothing posted:` header.
+For a dry-run, use the same layout under a `DRY RUN — nothing drafted:` header.
 
 ---
 
 ## Bundled resources
 
 - `scripts/parse-findings.mjs` — finding-block text (stdin) → normalized JSON (Step 1)
-- `scripts/post-comment.mjs` — REST poster; reads `GITLAB_TOKEN` from env, classifies + dedupes + posts (Step 8)
+- `scripts/post-comment.mjs` — REST poster; reads `GITLAB_TOKEN` from env, classifies + dedupes, creates draft notes (Step 8)
 - `references/gitlab-api.md` — endpoints, position rule, hunk-parsing rule, glab form, token-security notes, script contracts
