@@ -4,6 +4,8 @@ Review the change for performance issues.
 
 Focus on real, measurable problems. Do not flag micro-optimizations on cold paths.
 
+When `algorithm-efficiency` also runs, defer algorithmic-complexity, data-structure-choice, and redundant-network-call findings to it; keep this pass on runtime-resource issues (I/O blocking, allocations, locks, memory growth, pagination/streaming).
+
 ## Focus
 
 1. N+1 queries - looped queries that should be batched or joined.

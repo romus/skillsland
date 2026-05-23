@@ -6,8 +6,8 @@
     {
       "name": "overall-review",
       "path": "skills/overall-review",
-      "version": "0.4.0",
-      "description": "Interactively pick a base branch, pick a review profile (universal/bug-fix/feature/refactor/research/performance/security/migration/docs), and run the matching reviewers in parallel against the diff. Outputs the findings as per-finding blocks.",
+      "version": "0.5.0",
+      "description": "Interactively pick a base branch, pick a review profile (universal/bug-fix/feature/refactor/research/performance/security/migration/algorithm/docs), and run the matching reviewers in parallel against the diff. Outputs the findings as per-finding blocks.",
       "targets": ["claude-code", "codex"],
       "tags": ["git", "review", "quality"]
     },
