@@ -34,12 +34,13 @@ Each profile is a fixed list of reviewers. Pick a profile by explicit argument (
 | `feature`     | quality, implementation, architecture, testing, documentation, api-contract, dead-code   | New capability or new public API surface                |
 | `refactor`    | quality, simplification, architecture, scope-creep, testing, dead-code                   | Renames, extractions, no behavioural deltas             |
 | `research`    | research-completeness, evidence-quality, documentation                     | Design docs, ADRs, RFC drafts                           |
-| `performance` | performance, quality, testing, dead-code                                   | Hot loops, caches, async boundaries, N+1, large data    |
+| `performance` | performance, algorithm-efficiency, quality, testing, dead-code                                   | Hot loops, caches, async boundaries, N+1, large data    |
 | `security`    | security-audit, quality, testing, error-handling, dead-code                | Auth/crypto/secrets/session changes; dependency-only    |
 | `migration`   | migration-safety, quality, testing, dependency-audit, dead-code            | Migration-dominated diffs (only schema/migration files) |
+| `algorithm`   | algorithm-efficiency                                                       | Invoke the algorithm / network-efficiency lens on its own |
 | `docs`        | documentation                                                              | Only `*.md` / `docs/` changed                           |
 
-Synonyms accepted on the command line: `bug`/`fix` → `bug-fix`, `perf` → `performance`, `sec` → `security`, `doc` → `docs`, `feat` → `feature`, `mig` → `migration`, `ref` → `refactor`, `res` → `research`, `uni`/`all` → `universal`.
+Synonyms accepted on the command line: `bug`/`fix` → `bug-fix`, `perf` → `performance`, `sec` → `security`, `doc` → `docs`, `feat` → `feature`, `mig` → `migration`, `ref` → `refactor`, `res` → `research`, `algo`/`alg`/`algorithms` → `algorithm`, `uni`/`all` → `universal`.
 
 ### Add-on reviewers
 
@@ -178,7 +179,7 @@ Security-only review. Does **not** duplicate `quality`'s correctness findings.
 
 ### performance
 
-Real, measurable performance issues. Explicitly skips micro-optimisations on cold paths.
+Real, measurable performance issues. Explicitly skips micro-optimisations on cold paths. When `algorithm-efficiency` also runs, it owns the algorithmic-complexity and network-call findings; this reviewer keeps the runtime-resource concerns.
 
 - N+1 queries — looped queries that should be batched or joined
 - Quadratic or worse complexity on inputs that grow
@@ -188,6 +189,17 @@ Real, measurable performance issues. Explicitly skips micro-optimisations on col
 - Missing pagination/streaming on large result sets
 - Lock contention — too-broad critical sections, wrong granularity
 - Memory growth — unbounded collections, missing TTLs, leaks
+
+### algorithm-efficiency
+
+Algorithmic complexity and the cost of network/IO interactions. Coordinates with `performance`: owns complexity, data-structure choice, redundant recomputation, and network-call patterns, leaving runtime-resource issues (I/O blocking, allocations, locks, memory) to `performance`.
+
+- Quadratic-or-worse complexity on growable inputs; nested/repeated scans
+- Data-structure mismatch — linear lookups in a loop where a set/dict/index is O(1)
+- Redundant recomputation — loop-invariant work, missing memoization
+- Network/IO inside loops — per-iteration fetch/query/image read that should be batched, parallelized, prefetched, or cached
+- Repeated identical requests; chatty sequential round-trips; over-/under-fetching
+- Two-tier fix for network issues: client-side optimisation first; if blocked by a third-party API, a concrete API-shape change (batch/multi-get endpoint, bulk IDs, pagination, embedded resources, ETags, webhooks)
 
 ### migration-safety
 
@@ -280,4 +292,4 @@ Severity scale:
 - [`SKILL.md`](SKILL.md) — the prompt the host agent loads
 - [`scripts/list-base-branches.sh`](scripts/list-base-branches.sh) — emits JSON of candidate base branches (Step 1)
 - [`references/profiles.md`](references/profiles.md) — full profile-to-reviewer mapping, auto-detect rules, synonyms (Step 4)
-- [`references/reviewers/<name>.md`](references/reviewers/) — 17 reviewer prompts, one per file (Step 5)
+- [`references/reviewers/<name>.md`](references/reviewers/) — 18 reviewer prompts, one per file (Step 5)

@@ -11,9 +11,10 @@ Each profile is a fixed list of reviewers. The skill picks one profile per run (
 | `feature`     | quality, implementation, architecture, testing, documentation, api-contract, dead-code   |
 | `refactor`    | quality, simplification, architecture, scope-creep, testing, dead-code     |
 | `research`    | research-completeness, evidence-quality, documentation                     |
-| `performance` | performance, quality, testing, dead-code                                   |
+| `performance` | performance, algorithm-efficiency, quality, testing, dead-code             |
 | `security`    | security-audit, quality, testing, error-handling, dead-code                |
 | `migration`   | migration-safety, quality, testing, dependency-audit, dead-code            |
+| `algorithm`   | algorithm-efficiency                                                       |
 | `docs`        | documentation                                                              |
 
 Reviewer prompts live in `reviewers/<name>.md`, one file per reviewer.
@@ -30,6 +31,7 @@ If the user passes a profile name to `/overall-review`, match it case-insensitiv
 - `mig` → `migration`
 - `ref` → `refactor`
 - `res` → `research`
+- `algo`, `alg`, `algorithms` → `algorithm`
 - `uni`, `all` → `universal`
 
 Anything that doesn't match a profile name or synonym: ignore the argument and fall through to auto-detect.
@@ -48,6 +50,8 @@ When no explicit argument is given, run `git diff --stat <base>...HEAD` and insp
 8. **`feature`** — new files implementing a new capability, or new public API surface.
 9. **`refactor`** — mostly renames / file moves / function extractions with no behavioural deltas.
 10. **`universal`** — mixed or ambiguous (default fallback).
+
+`algorithm` has no auto-detect trigger — invoke it explicitly (`/overall-review algorithm`) when you want only the algorithm/network-efficiency lens. The `algorithm-efficiency` reviewer otherwise runs automatically inside the `performance` profile (rule 4).
 
 ## Add-on reviewers
 
