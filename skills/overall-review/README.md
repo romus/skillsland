@@ -29,10 +29,10 @@ Each profile is a fixed list of reviewers. Pick a profile by explicit argument (
 
 | Profile       | Reviewers                                                                  | Use when                                                |
 |---------------|----------------------------------------------------------------------------|---------------------------------------------------------|
-| `universal`   | quality, implementation, testing, simplification, documentation, dead-code | Mixed or ambiguous diffs (the default fallback)         |
+| `universal`   | quality, implementation, architecture, testing, simplification, documentation, dead-code | Mixed or ambiguous diffs (the default fallback)         |
 | `bug-fix`     | quality, regression, scope-creep, testing, error-handling, dead-code       | Focused fix; commit messages say "fix"/"bug"/"crash"    |
-| `feature`     | quality, implementation, testing, documentation, api-contract, dead-code   | New capability or new public API surface                |
-| `refactor`    | quality, simplification, scope-creep, testing, dead-code                   | Renames, extractions, no behavioural deltas             |
+| `feature`     | quality, implementation, architecture, testing, documentation, api-contract, dead-code   | New capability or new public API surface                |
+| `refactor`    | quality, simplification, architecture, scope-creep, testing, dead-code                   | Renames, extractions, no behavioural deltas             |
 | `research`    | research-completeness, evidence-quality, documentation                     | Design docs, ADRs, RFC drafts                           |
 | `performance` | performance, quality, testing, dead-code                                   | Hot loops, caches, async boundaries, N+1, large data    |
 | `security`    | security-audit, quality, testing, error-handling, dead-code                | Auth/crypto/secrets/session changes; dependency-only    |
@@ -75,6 +75,17 @@ Does the code actually achieve the goal it claims? Style is out of scope.
 - Completeness — no missing pieces that block the feature
 - Logic flow from input to output
 - Edge cases at boundaries
+
+### architecture
+
+Structural soundness. Distinct from `simplification` (which owns "too much structure" — redundant layers) and `implementation` (does it work / is it wired); `architecture` owns "wrong or inconsistent structure". Cites the existing pattern before flagging a divergence.
+
+- Detects the codebase's established architecture (layering, module boundaries, dependency direction) before judging
+- Conformance — code in the wrong layer/module, dependency-direction violations, parallel abstractions reinventing existing ones
+- Best practices for new services/features with no precedent — separation of concerns, coupling/cohesion, no cycles
+- Clear boundaries & ownership; well-defined transaction/consistency boundaries
+- Leaky abstractions crossing a boundary (DB rows, HTTP shapes, vendor SDK types)
+- Patterns used because they earn their keep, not cargo-culted
 
 ### testing
 
@@ -269,4 +280,4 @@ Severity scale:
 - [`SKILL.md`](SKILL.md) — the prompt the host agent loads
 - [`scripts/list-base-branches.sh`](scripts/list-base-branches.sh) — emits JSON of candidate base branches (Step 1)
 - [`references/profiles.md`](references/profiles.md) — full profile-to-reviewer mapping, auto-detect rules, synonyms (Step 4)
-- [`references/reviewers/<name>.md`](references/reviewers/) — 16 reviewer prompts, one per file (Step 5)
+- [`references/reviewers/<name>.md`](references/reviewers/) — 17 reviewer prompts, one per file (Step 5)

@@ -6,10 +6,10 @@ Each profile is a fixed list of reviewers. The skill picks one profile per run (
 
 | Profile       | Reviewers                                                                  |
 |---------------|----------------------------------------------------------------------------|
-| `universal`   | quality, implementation, testing, simplification, documentation, dead-code |
+| `universal`   | quality, implementation, architecture, testing, simplification, documentation, dead-code |
 | `bug-fix`     | quality, regression, scope-creep, testing, error-handling, dead-code       |
-| `feature`     | quality, implementation, testing, documentation, api-contract, dead-code   |
-| `refactor`    | quality, simplification, scope-creep, testing, dead-code                   |
+| `feature`     | quality, implementation, architecture, testing, documentation, api-contract, dead-code   |
+| `refactor`    | quality, simplification, architecture, scope-creep, testing, dead-code     |
 | `research`    | research-completeness, evidence-quality, documentation                     |
 | `performance` | performance, quality, testing, dead-code                                   |
 | `security`    | security-audit, quality, testing, error-handling, dead-code                |
