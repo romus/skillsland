@@ -14,7 +14,7 @@
     {
       "name": "gitlab-review-comments",
       "path": "skills/gitlab-review-comments",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "description": "Add /overall-review findings to a GitLab merge request as pending draft review notes (you submit them yourself in GitLab), inline on the diff, phrased in a suggestive register, with preview/confirm, per-run selection of findings (by number and/or severity), idempotent re-runs, and general-note fallback for lines outside the diff.",
       "targets": ["claude-code", "codex"],
       "tags": ["git", "gitlab", "review", "merge-request", "code-review"]

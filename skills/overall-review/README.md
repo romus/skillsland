@@ -40,7 +40,7 @@ Each profile is a fixed list of reviewers. Pick a profile by explicit argument (
 | `algorithm`   | algorithm-efficiency                                                       | Invoke the algorithm / network-efficiency lens on its own |
 | `docs`        | documentation                                                              | Only `*.md` / `docs/` changed                           |
 
-Synonyms accepted on the command line: `bug`/`fix` → `bug-fix`, `perf` → `performance`, `sec` → `security`, `doc` → `docs`, `feat` → `feature`, `mig` → `migration`, `ref` → `refactor`, `res` → `research`, `algo`/`alg`/`algorithms` → `algorithm`, `uni`/`all` → `universal`.
+Synonyms accepted on the command line: `bug`/`fix`/`bugfix` → `bug-fix`, `perf` → `performance`, `sec` → `security`, `doc`/`docs` → `docs`, `feat` → `feature`, `mig` → `migration`, `ref` → `refactor`, `res` → `research`, `algo`/`alg`/`algorithms` → `algorithm`, `uni`/`all` → `universal`.
 
 ### Add-on reviewers
 

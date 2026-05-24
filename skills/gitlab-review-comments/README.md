@@ -1,6 +1,6 @@
 # gitlab-review-comments
 
-Companion to [`overall-review`](../overall-review/). It takes the per-finding blocks that `/overall-review` printed and adds them to the matching GitLab Merge Request as **pending draft review notes** — **inline on the right `file:line`** wherever the line is part of the MR diff, and as a general MR note otherwise. Each note is phrased in a suggestive register ("this could be a problem; here's how it could be fixed").
+Companion to [`overall-review`](../overall-review/). It takes the per-finding blocks that `/overall-review` printed and adds them to the matching GitLab Merge Request as **pending draft review notes** — **inline on the right `file:line`** wherever the line is part of the MR diff, and as a general MR note otherwise. Each note is phrased in a suggestive register ("this could be a problem; here's how it could be fixed") and written as **Markdown** — code in the issue/fix is wrapped so GitLab highlights it. The note body shows only the severity, not which reviewer found the issue.
 
 The drafts are **not published**: you review them in the GitLab UI and click **Submit review** to publish — a second pair of eyes on the findings, in context. It is read-only on your local code; the only external write is creating draft notes (after an explicit preview-and-confirm gate), and it never submits the review for you.
 
@@ -67,7 +67,7 @@ Summary: 2 inline, 1 general note, 1 dup-skipped, 0 unverified — MR !87 (group
 Submit at: https://gitlab.com/group/sub/repo/-/merge_requests/87
 ```
 
-## Limitations (v0.2.0)
+## Limitations (v0.3.0)
 
 - Creates **draft notes only** — you click "Submit review" in GitLab to publish. The skill never submits for you.
 - Single-line comments only — multi-line ranges (`position[line_range]`) are not yet supported.
