@@ -1,7 +1,7 @@
 ---
 name: overall-review
 description: This skill should be used when the user asks to "review my changes", "do an overall review", "review this branch", "code review against main", or invokes "/overall-review" (optionally with a profile name like "/overall-review security", "/overall-review performance", "/overall-review bug-fix"). Interactively asks which base branch to compare against, picks a review profile (universal, bug-fix, feature, refactor, research, performance, security, migration, algorithm, docs) either from an explicit argument or by auto-detecting from the diff, runs the matching reviewers in parallel, and outputs the findings as per-finding blocks in the user's language. Does NOT modify code, does NOT commit, does NOT propose to apply fixes — review and report only.
-version: 0.5.0
+version: 0.5.1
 targets:
   - claude-code
   - codex
@@ -112,7 +112,7 @@ For every finding returned by every reviewer:
 3. **Deduplicate.** If two reviewers reported the same `file:line` and the same underlying issue, merge into one block. List both reviewer names comma-separated in the block header.
 4. **Assign severity**, one of:
    - `critical` — production data loss, security breach, hard crash on common input, broken contract that ships.
-   - `major` — wrong behavior in plausible cases, missing tests on a risky change, regression risk, performance cliff under realistic load.
+   - `major` — wrong behavior in plausible cases, missing tests on a risky change, regression risk, performance cliff under realistic load, lock-contending migration DDL on an existing table (index build, `ALTER`, constraint/type change) that can block concurrent traffic — excluding new-table creation.
    - `minor` — code smell with limited impact, missing-but-not-critical docs/log/metric, style of error handling.
    - `nit` — cosmetic, naming, light polish.
 

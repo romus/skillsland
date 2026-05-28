@@ -7,8 +7,10 @@ Review schema or infrastructure migrations for production safety.
 1. NOT NULL columns added without a server-side default or backfill plan.
 2. Column or table drops without a deprecation/grace period.
 3. Type changes that may truncate or fail on existing data.
-4. Index creation/drop on large tables without CONCURRENTLY (Postgres) or equivalent;
-   long ACCESS EXCLUSIVE locks blocking traffic.
+4. Lock-contending DDL on an **existing** table (NOT new-table creation): index
+   create/drop, `ALTER COLUMN`, `ADD`/`DROP` constraint, or type change that takes a
+   blocking lock (Postgres ACCESS EXCLUSIVE or equivalent) and stalls concurrent
+   reads/writes on that table — e.g. index built without CONCURRENTLY. See Severity.
 5. Backfill scripts - batched? idempotent? resumable? bounded by lock duration?
 6. Rollback path - is there one? Is data still recoverable after the forward migration?
 7. Application/migration ordering - are old and new code compatible during the rollout
@@ -24,5 +26,13 @@ For each issue:
 - Issue: what could break in production
 - Impact: outage risk, data loss, lock contention, or rollback impossibility
 - Fix: specific suggestion
+
+## Severity
+
+Lock-contending DDL on an **existing** table (focus item 4) is at least `major` for
+SQL/relational databases — it can block production traffic during the migration. Apply
+equivalent severity to non-SQL stores with comparable blocking schema-change semantics
+(e.g. blocking/offline reindex, blocking schema migration). Creating a **new** table or
+collection is exempt — it does not contend with traffic on existing data.
 
 Report problems only - no positive observations.
