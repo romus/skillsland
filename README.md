@@ -11,7 +11,7 @@ Codex, and 55+ other agents with a single command.
 
 | Name | Description |
 |---|---|
-| [`overall-review`](skills/overall-review/) | Multi-perspective code review of the current branch against a base you pick. Selects one of 10 profiles (universal / bug-fix / feature / refactor / research / performance / security / migration / algorithm / docs) and runs the matching reviewers in parallel. Full docs and reviewer breakdown: [skills/overall-review/README.md](skills/overall-review/README.md). |
+| [`overall-review`](skills/overall-review/) | Multi-perspective code review of the current branch against a base you pick. Selects one of 11 profiles (universal / bug-fix / feature / refactor / research / performance / security / migration / algorithm / messaging / docs) and runs the matching reviewers in parallel. Full docs and reviewer breakdown: [skills/overall-review/README.md](skills/overall-review/README.md). |
 | [`gitlab-review-comments`](skills/gitlab-review-comments/) | Adds `/overall-review` findings to a GitLab MR as **pending draft review notes** (inline on the diff; you click "Submit review" in GitLab to publish), phrased in a suggestive register, with preview/confirm, per-run selection of findings (by number and/or severity), idempotent re-runs, and a general-note fallback for lines outside the diff. Detects glab CLI / GitLab MCP / REST. Full docs: [skills/gitlab-review-comments/README.md](skills/gitlab-review-comments/README.md). |
 
 ## Install a skill

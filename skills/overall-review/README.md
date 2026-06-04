@@ -38,9 +38,10 @@ Each profile is a fixed list of reviewers. Pick a profile by explicit argument (
 | `security`    | security-audit, quality, testing, error-handling, dead-code                | Auth/crypto/secrets/session changes; dependency-only    |
 | `migration`   | migration-safety, quality, testing, dependency-audit, dead-code            | Migration-dominated diffs (only schema/migration files) |
 | `algorithm`   | algorithm-efficiency                                                       | Invoke the algorithm / network-efficiency lens on its own |
+| `messaging`   | messaging-patterns                                                         | Invoke the Kafka/RabbitMQ/Artemis reliability lens on its own |
 | `docs`        | documentation                                                              | Only `*.md` / `docs/` changed                           |
 
-Synonyms accepted on the command line: `bug`/`fix`/`bugfix` → `bug-fix`, `perf` → `performance`, `sec` → `security`, `doc`/`docs` → `docs`, `feat` → `feature`, `mig` → `migration`, `ref` → `refactor`, `res` → `research`, `algo`/`alg`/`algorithms` → `algorithm`, `uni`/`all` → `universal`.
+Synonyms accepted on the command line: `bug`/`fix`/`bugfix` → `bug-fix`, `perf` → `performance`, `sec` → `security`, `doc`/`docs` → `docs`, `feat` → `feature`, `mig` → `migration`, `ref` → `refactor`, `res` → `research`, `algo`/`alg`/`algorithms` → `algorithm`, `mq`/`kafka`/`rabbit`/`rabbitmq`/`artemis`/`jms`/`messaging` → `messaging`, `uni`/`all` → `universal`.
 
 ### Add-on reviewers
 
@@ -48,6 +49,7 @@ Some signals add a single lens on top of the base profile instead of switching t
 
 - **`migration-safety`** — added when a diff touches schema/migration artifacts (schema-DDL `*.sql`, ORM column add/drop/type changes, migration directories) but is *not* migration-dominated. This is why a stray `.sql` inside a feature diff no longer collapses the whole review into the `migration` profile — you keep the general review and gain the safety lens.
 - **`dependency-audit`** — added when dependency manifests change alongside other code (the dependency-only case stays a full `security` variant).
+- **`messaging-patterns`** — added when the diff touches message-broker code (`@KafkaListener`/`@RabbitListener`/`@JmsListener`, Kafka Streams topologies, Kafka/AMQP/JMS clients, or broker config). Layers the broker-reliability lens on top so message-loss bugs are caught inside any base profile.
 
 ## Reviewers
 
@@ -213,6 +215,20 @@ Production-safety review for schema and infrastructure migrations. Reports outag
 - Rollback path; data still recoverable after forward migration
 - Application/migration ordering during rollout (expand/contract)
 - Replication impact on large migrations
+
+### messaging-patterns
+
+Message-broker reliability across Kafka (incl. Spring Kafka / Kafka Streams), RabbitMQ (Spring AMQP), and Artemis / ActiveMQ (JMS). The headline failure mode is silent message loss from acking/committing before processing finishes.
+
+- Ack/commit before processing completes → message lost on crash
+- At-least-once consumed without idempotency/dedup → duplicate side effects
+- No dead-letter / poison-message path → infinite redelivery or stalled partition/queue
+- Swallowed listener exception that acks a failed message as success
+- Producer-side loss — fire-and-forget send without awaiting broker confirmation
+- Non-atomic DB-commit + ack (dual write) with no outbox/transaction
+- Kafka — `enable.auto.commit`, missing `DefaultErrorHandler`/DLT, `acks=all`/idempotence, poll-timeout rebalance, Streams `processing.guarantee`
+- RabbitMQ — `AcknowledgeMode.NONE`/`autoAck`, requeue loops, missing DLX, publisher confirms, durability
+- Artemis/JMS — `AUTO_ACKNOWLEDGE` vs client/transacted ack, persistence, redelivery/DLQ limits
 
 ### api-contract
 

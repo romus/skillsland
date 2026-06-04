@@ -15,6 +15,7 @@ Each profile is a fixed list of reviewers. The skill picks one profile per run (
 | `security`    | security-audit, quality, testing, error-handling, dead-code                |
 | `migration`   | migration-safety, quality, testing, dependency-audit, dead-code            |
 | `algorithm`   | algorithm-efficiency                                                       |
+| `messaging`   | messaging-patterns                                                         |
 | `docs`        | documentation                                                              |
 
 Reviewer prompts live in `reviewers/<name>.md`, one file per reviewer.
@@ -32,6 +33,7 @@ If the user passes a profile name to `/overall-review`, match it case-insensitiv
 - `ref` → `refactor`
 - `res` → `research`
 - `algo`, `alg`, `algorithms` → `algorithm`
+- `mq`, `kafka`, `rabbit`, `rabbitmq`, `artemis`, `jms`, `messaging` → `messaging`
 - `uni`, `all` → `universal`
 
 Anything that doesn't match a profile name or synonym: ignore the argument and fall through to auto-detect.
@@ -53,9 +55,12 @@ When no explicit argument is given, run `git diff --stat <base>...HEAD` and insp
 
 `algorithm` has no auto-detect trigger — invoke it explicitly (`/overall-review algorithm`) when you want only the algorithm/network-efficiency lens. The `algorithm-efficiency` reviewer otherwise runs automatically inside the `performance` profile (rule 4).
 
+`messaging` likewise has no auto-detect trigger — invoke it explicitly (`/overall-review messaging`) when you want only the message-broker reliability lens. The `messaging-patterns` reviewer otherwise attaches automatically as an add-on whenever the diff touches broker code (see "Add-on reviewers").
+
 ## Add-on reviewers
 
 Some signals don't justify switching the whole profile but add a single lens on top of the base profile (explicit or auto-detected). Append the add-on's reviewer to the base profile's reviewer list — never drop a base reviewer. Announce and summarise as `<base> + <add-on>` (e.g. `feature + migration-safety`). Add-ons stack.
 
 - **`migration-safety`** — add when the diff touches schema/migration artifacts (schema-DDL `*.sql`, ORM model column add/drop/type changes, migration directories) but is **not** migration-dominated (rule 1 above). This keeps the general review and layers the production-safety lens on top, instead of replacing the general review with the `migration` profile.
 - **`dependency-audit`** — add when dependency manifests change alongside other code. (The dependency-*only* case stays a full profile via auto-detect rule 3.)
+- **`messaging-patterns`** — add when the diff touches message-broker code: Spring messaging annotations (`@KafkaListener`, `@KafkaHandler`, `@RabbitListener`, `@JmsListener`), `KafkaStreams`/`StreamsBuilder` topologies, Kafka/AMQP/JMS client imports, or broker config (Kafka consumer/producer properties, `rabbitmq`/`amqp`, `artemis`/`activemq`, related `application.yml`/`.properties` blocks). Layers the broker-reliability lens on top of the base profile, since message-loss bugs ride along with feature/bug-fix/refactor diffs.
