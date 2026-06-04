@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A catalogue of reusable agent skills (prompts + bundled resources) consumed by the [`skills` CLI from vercel-labs](https://github.com/vercel-labs/skills) (`npx skills add romus/skillsland`). The repo ships **content**, not executable code — there is no application to build, no test suite, no runtime. The only program here is a tiny manifest validator.
 
+The skills are not independent: `gitlab-review-comments` is a **downstream consumer** of `overall-review`. It takes the per-finding blocks `overall-review` emits (see its Step 7 output format) and posts them as GitLab MR draft review notes. So the per-finding block format is a contract shared across both skills — changing it in `overall-review` can break `gitlab-review-comments`. Check both when editing that format.
+
 ## Commands
 
 There is exactly one:
