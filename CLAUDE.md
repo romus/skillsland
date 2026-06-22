@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A catalogue of reusable agent skills (prompts + bundled resources) consumed by the [`skills` CLI from vercel-labs](https://github.com/vercel-labs/skills) (`npx skills add romus/skillsland`). The repo ships **content**, not executable code — there is no application to build, no test suite, no runtime. The only program here is a tiny manifest validator.
 
-The skills are not independent: `gitlab-review-comments` is a **downstream consumer** of `overall-review`. It takes the per-finding blocks `overall-review` emits (see its Step 7 output format) and posts them as GitLab MR draft review notes. So the per-finding block format is a contract shared across both skills — changing it in `overall-review` can break `gitlab-review-comments`. Check both when editing that format.
+The skills are not independent: `sl-gitlab-review-comments` is a **downstream consumer** of `sl-overall-review`. It takes the per-finding blocks `sl-overall-review` emits (see its Step 7 output format) and posts them as GitLab MR draft review notes. So the per-finding block format is a contract shared across both skills — changing it in `sl-overall-review` can break `sl-gitlab-review-comments`. Check both when editing that format.
 
 ## Commands
 
@@ -35,7 +35,7 @@ A skill is a directory `skills/<name>/` containing:
 
 - **`SKILL.md`** (required) — YAML frontmatter (`name`, `description`, `version`, optional `targets`, `allowed-tools`, `tags`) followed by the prompt body the host agent loads.
 - **`README.md`** (optional) — human-readable docs for the skill; `SKILL.md` is for the agent, this is for the developer.
-- **`references/`** (optional, by convention) — supporting documents the SKILL.md tells the agent to read at runtime (e.g. `references/profiles.md`, `references/reviewers/*.md` in `overall-review`). Splitting long prompt content into references keeps SKILL.md scannable.
+- **`references/`** (optional, by convention) — supporting documents the SKILL.md tells the agent to read at runtime (e.g. `references/profiles.md`, `references/reviewers/*.md` in `sl-overall-review`). Splitting long prompt content into references keeps SKILL.md scannable.
 - **`scripts/`** (optional, by convention) — helper scripts the skill invokes at runtime (e.g. shell scripts emitting JSON for the agent to parse). Subdirs aren't enumerated in the manifest; they're discovered via paths inside SKILL.md.
 
 The `description` field in frontmatter is **how the agent decides to load the skill** — it must literally include the trigger phrases users would say (e.g. "review my changes", `/<skill-name>`). Treat it as a discovery key, not a tagline.
@@ -44,7 +44,7 @@ The `description` field in frontmatter is **how the agent decides to load the sk
 
 Skills here target both Claude Code and Codex CLI (declared in `targets:`). Three things bite if you ignore them:
 
-1. **Output format must render in plain terminals.** Codex CLI shows responses as raw text without a Markdown renderer, so `| col | col |` tables collapse to pipe-noise. The convention in this repo is per-finding blocks (see `skills/overall-review/SKILL.md` Step 7 for the format).
+1. **Output format must render in plain terminals.** Codex CLI shows responses as raw text without a Markdown renderer, so `| col | col |` tables collapse to pipe-noise. The convention in this repo is per-finding blocks (see `skills/sl-overall-review/SKILL.md` Step 7 for the format).
 2. **Tool availability differs.** Claude Code has `Agent` (sub-agents) and `AskUserQuestion`; Codex doesn't expose the same surface. When a SKILL.md depends on a Claude-only tool, give a Codex fallback inline rather than branching the file.
 3. **Codex stores prompts as a single `.md` file** in `~/.codex/prompts/<name>.md`. Bundled `references/` and `scripts/` are copied alongside by `npx skills` so runtime paths still work — don't assume they won't.
 

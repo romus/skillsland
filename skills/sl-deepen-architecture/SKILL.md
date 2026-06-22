@@ -1,6 +1,6 @@
 ---
-name: deepen-architecture
-description: This skill should be used when the user asks to "improve my architecture", "improve the codebase architecture", "deepen the modules", "reduce complexity", "find shallow modules", "suggest architecture improvements", or invokes "/deepen-architecture" (optionally with a scope path and/or an output mode, e.g. "/deepen-architecture html src/payments" or "/deepen-architecture text"). Studies the resting codebase — reading its context docs (CLAUDE.md, ARCHITECTURE.md, README, ADRs) and, when available, using LSP or a JetBrains/IDE MCP to resolve symbols and usages — then proposes up to 3–4 high-leverage architecture improvements grounded in deep-module design (locality and leverage), ranked by strength. Delivers them either as a self-contained HTML proposal report (cards with Files / Problem / Solution / Benefits / Before-After SVG diagram / strength badge) saved to .skillsland/deepen-architecture/, or as a plain-text proposal printed in the chat with ASCII Before/After diagrams — the user's choice. Read-only on code: it proposes and documents — it does NOT edit, refactor, or commit. Use it before starting an architecture effort, not to perform one.
+name: sl-deepen-architecture
+description: This skill should be used when the user asks to "improve my architecture", "improve the codebase architecture", "deepen the modules", "reduce complexity", "find shallow modules", "suggest architecture improvements", or invokes "/sl-deepen-architecture" (optionally with a scope path and/or an output mode, e.g. "/sl-deepen-architecture html src/payments" or "/sl-deepen-architecture text"). Studies the resting codebase — reading its context docs (CLAUDE.md, ARCHITECTURE.md, README, ADRs) and, when available, using LSP or a JetBrains/IDE MCP to resolve symbols and usages — then proposes up to 3–4 high-leverage architecture improvements grounded in deep-module design (locality and leverage), ranked by strength. Delivers them either as a self-contained HTML proposal report (cards with Files / Problem / Solution / Benefits / Before-After SVG diagram / strength badge) saved to .skillsland/deepen-architecture/, or as a plain-text proposal printed in the chat with ASCII Before/After diagrams — the user's choice. Read-only on code: it proposes and documents — it does NOT edit, refactor, or commit. Use it before starting an architecture effort, not to perform one.
 version: 0.1.0
 targets:
   - claude-code
@@ -36,7 +36,7 @@ unknown-unknowns; locality & leverage). Follow the seven steps in order.
 - Final reply respects the chosen output mode (Step 7), in the language of the user's most
   recent message (default English). No markdown tables.
 
-This is the resting-state counterpart to `/overall-review` (which reviews a *diff*). Same DNA —
+This is the resting-state counterpart to `/sl-overall-review` (which reviews a *diff*). Same DNA —
 read-only, parallel lenses, structured JSON → script handoff, no silent truncation — different
 time-axis and a durable artifact.
 
@@ -50,7 +50,7 @@ with a scope path) selects it directly. Otherwise ask:
 - **Codex / plain CLI:** print the two options as a numbered list and read the choice from stdin.
 - If unanswered: default to **text** in a plain terminal / Codex, **HTML** in Claude Code.
 
-**Scope.** A path argument (`/deepen-architecture src/payments`) restricts the study to that
+**Scope.** A path argument (`/sl-deepen-architecture src/payments`) restricts the study to that
 subtree; otherwise the whole repo. Run the context collector:
 
 ```bash

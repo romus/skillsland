@@ -1,6 +1,6 @@
 # Design principles — the lens every candidate is judged against
 
-This is the shared vocabulary for `deepen-architecture`. Every analysis lens
+This is the shared vocabulary for `sl-deepen-architecture`. Every analysis lens
 (`references/lenses/*.md`) reads this file so candidates speak one language and the
 strength badge means the same thing across the report. It is grounded in John
 Ousterhout's *A Philosophy of Software Design* (APoSD).
@@ -108,8 +108,8 @@ structural candidate:
 
 - **Naming, comments, formatting, obscurity** — local fixes, not structural leverage.
 - **Diff-relative concerns** — scope-creep, "did this PR over-engineer" — there is no diff
-  here; that's `overall-review`'s job. Over-abstraction in the *resting* code is in scope, but
+  here; that's `sl-overall-review`'s job. Over-abstraction in the *resting* code is in scope, but
   as the inverse of deep modules (folded into `shallow-modules` / `pass-through-and-layers`),
   not as a separate lens.
-- **Bugs, security, performance** — `overall-review` owns those. Mention only if a structural
+- **Bugs, security, performance** — `sl-overall-review` owns those. Mention only if a structural
   change is the natural fix and the structure is the real point.

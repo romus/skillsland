@@ -1,4 +1,4 @@
-# deepen-architecture
+# sl-deepen-architecture
 
 Study the **resting state** of a codebase and propose up to **3–4 high-leverage architecture
 improvements** — grounded in John Ousterhout's *A Philosophy of Software Design* (deep vs.
@@ -7,9 +7,9 @@ shallow modules, locality & leverage, defining errors out of existence). It's an
 it proposes and documents, it never edits, refactors, or commits.
 
 ```
-/deepen-architecture                 # whole repo, ask which output mode
-/deepen-architecture text            # print the proposal here, with ASCII diagrams (zero writes)
-/deepen-architecture html src/api    # scope to src/api, save an HTML report
+/sl-deepen-architecture                 # whole repo, ask which output mode
+/sl-deepen-architecture text            # print the proposal here, with ASCII diagrams (zero writes)
+/sl-deepen-architecture html src/api    # scope to src/api, save an HTML report
 ```
 
 ## Two output modes
@@ -54,15 +54,15 @@ functionality) — so SVG and ASCII stay consistent.
    tool), or text to stdout.
 7. Deliver the proposal in the user's language.
 
-## Relationship to `overall-review`
+## Relationship to `sl-overall-review`
 
-| | `overall-review` | `deepen-architecture` |
+| | `sl-overall-review` | `sl-deepen-architecture` |
 |---|---|---|
 | Looks at | the **diff** vs a base branch | the **resting codebase** |
 | Produces | findings (bugs/quality), chat-only | architecture **proposals**, durable report |
 | Question | "is this change correct?" | "where would deepening pay off most?" |
 
-Use `overall-review` to vet a change; use `deepen-architecture` to plan where to invest in
+Use `sl-overall-review` to vet a change; use `sl-deepen-architecture` to plan where to invest in
 structure next.
 
 ## The saved `<date>.json` is a contract
@@ -70,7 +70,7 @@ structure next.
 In HTML mode the candidates JSON is kept next to the report. Its shape (`schemaVersion: 1`, see
 [`references/report-format.md`](references/report-format.md)) is a **stable contract** — a future
 downstream skill (e.g. "apply one candidate" or "track proposal status") can consume it, the way
-`gitlab-review-comments` consumes `overall-review` output.
+`sl-gitlab-review-comments` consumes `sl-overall-review` output.
 
 ## Bundled resources
 

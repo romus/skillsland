@@ -1,6 +1,6 @@
 ---
-name: overall-review
-description: This skill should be used when the user asks to "review my changes", "do an overall review", "review this branch", "code review against main", or invokes "/overall-review" (optionally with a profile name like "/overall-review security", "/overall-review performance", "/overall-review bug-fix"). Interactively asks which base branch to compare against, picks a review profile (universal, bug-fix, feature, refactor, research, performance, security, migration, algorithm, messaging, docs) either from an explicit argument or by auto-detecting from the diff, runs the matching reviewers in parallel, and outputs the findings as per-finding blocks in the user's language. Does NOT modify code, does NOT commit, does NOT propose to apply fixes — review and report only.
+name: sl-overall-review
+description: This skill should be used when the user asks to "review my changes", "do an overall review", "review this branch", "code review against main", or invokes "/sl-overall-review" (optionally with a profile name like "/sl-overall-review security", "/sl-overall-review performance", "/sl-overall-review bug-fix"). Interactively asks which base branch to compare against, picks a review profile (universal, bug-fix, feature, refactor, research, performance, security, migration, algorithm, messaging, docs) either from an explicit argument or by auto-detecting from the diff, runs the matching reviewers in parallel, and outputs the findings as per-finding blocks in the user's language. Does NOT modify code, does NOT commit, does NOT propose to apply fixes — review and report only.
 version: 0.6.0
 targets:
   - claude-code
@@ -75,7 +75,7 @@ If the full diff is very large, sample it for the reviewer briefings, but make s
 
 A "profile" is a fixed list of reviewers to run. See `references/profiles.md` for the full mapping table, auto-detect rules, and synonyms. Selection rule (hybrid: explicit argument wins, otherwise auto-detect):
 
-1. **If the user passed a profile name as the argument** to `/overall-review` (for example `/overall-review security`, `/overall-review feature`, `/overall-review migration`), use that profile. Profile names are case-insensitive. Common synonyms: `bug`/`fix` → `bug-fix`, `perf` → `performance`, `sec` → `security`, `doc`/`docs` → `docs`. Full list in `references/profiles.md`.
+1. **If the user passed a profile name as the argument** to `/sl-overall-review` (for example `/sl-overall-review security`, `/sl-overall-review feature`, `/sl-overall-review migration`), use that profile. Profile names are case-insensitive. Common synonyms: `bug`/`fix` → `bug-fix`, `perf` → `performance`, `sec` → `security`, `doc`/`docs` → `docs`. Full list in `references/profiles.md`.
 
 2. **Otherwise, auto-detect from the diff** using the rules in `references/profiles.md` (ordered triggers based on changed paths, file types, and commit messages). Fallback: `universal`.
 

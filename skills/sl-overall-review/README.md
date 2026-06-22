@@ -1,4 +1,4 @@
-# overall-review
+# sl-overall-review
 
 End-to-end code review of the changes on your current branch against a base branch you pick. The skill runs a fixed set of independent reviewers in parallel (one per concern), consolidates and de-duplicates the findings, and prints them as plain-text per-finding blocks that read well in both Claude Code and Codex CLI.
 
@@ -9,7 +9,7 @@ It does **not** modify code, run tests, commit, or offer to apply fixes — revi
 Trigger phrases the host agent recognises:
 
 - "review my changes" / "do an overall review" / "review this branch" / "code review against main"
-- The slash command `/overall-review`, optionally with a profile argument: `/overall-review security`, `/overall-review performance`, `/overall-review bug-fix`, …
+- The slash command `/sl-overall-review`, optionally with a profile argument: `/sl-overall-review security`, `/sl-overall-review performance`, `/sl-overall-review bug-fix`, …
 
 The skill prompts for the base branch interactively (offers `main`/`master`, current upstream, recent branches, plus a manual entry).
 

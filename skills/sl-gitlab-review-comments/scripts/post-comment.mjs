@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// post-comment.mjs — post overall-review findings to a GitLab MR.
-// REST transport for the gitlab-review-comments skill. No deps (Node 20+ fetch).
+// post-comment.mjs — post sl-overall-review findings to a GitLab MR.
+// REST transport for the sl-gitlab-review-comments skill. No deps (Node 20+ fetch).
 //
 // By default it creates PENDING DRAFT NOTES (GitLab's "Start a review" flow):
 // the notes are not published — the user reviews them in the GitLab UI and
@@ -40,8 +40,8 @@
 
 import { readFileSync } from "node:fs";
 
-const MARKER_TAG = "overall-review:gitlab-review-comments";
-const MARKER_RE = /<!--\s*overall-review:gitlab-review-comments fp=([0-9a-f]+)\s*-->/i;
+const MARKER_TAG = "sl-overall-review:sl-gitlab-review-comments";
+const MARKER_RE = /<!--\s*sl-overall-review:sl-gitlab-review-comments fp=([0-9a-f]+)\s*-->/i;
 const HUNK = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
 const marker = (fp) => `<!-- ${MARKER_TAG} fp=${fp} -->`;
 

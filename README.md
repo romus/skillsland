@@ -11,9 +11,9 @@ Codex, and 55+ other agents with a single command.
 
 | Name | Description |
 |---|---|
-| [`overall-review`](skills/overall-review/) | Multi-perspective code review of the current branch against a base you pick. Selects one of 11 profiles (universal / bug-fix / feature / refactor / research / performance / security / migration / algorithm / messaging / docs) and runs the matching reviewers in parallel. Full docs and reviewer breakdown: [skills/overall-review/README.md](skills/overall-review/README.md). |
-| [`gitlab-review-comments`](skills/gitlab-review-comments/) | Adds `/overall-review` findings to a GitLab MR as **pending draft review notes** (inline on the diff; you click "Submit review" in GitLab to publish), phrased in a suggestive register, with preview/confirm, per-run selection of findings (by number and/or severity), idempotent re-runs, and a general-note fallback for lines outside the diff. Detects glab CLI / GitLab MCP / REST. Full docs: [skills/gitlab-review-comments/README.md](skills/gitlab-review-comments/README.md). |
-| [`deepen-architecture`](skills/deepen-architecture/) | Studies the **resting codebase** and proposes up to 3–4 high-leverage architecture improvements grounded in deep-module design (locality & leverage, _A Philosophy of Software Design_), ranked by strength. Reads context docs (CLAUDE.md / ARCHITECTURE.md / ADRs) and optionally LSP / a JetBrains-IDE MCP; runs six analysis lenses in parallel. Delivers either a self-contained HTML report (cards with Files / Problem / Solution / Benefits / Before-After SVG diagram / strength badge) saved to `.skillsland/deepen-architecture/`, or plain text with ASCII diagrams in the chat. Read-only on code. Full docs: [skills/deepen-architecture/README.md](skills/deepen-architecture/README.md). |
+| [`sl-overall-review`](skills/sl-overall-review/) | Multi-perspective code review of the current branch against a base you pick. Selects one of 11 profiles (universal / bug-fix / feature / refactor / research / performance / security / migration / algorithm / messaging / docs) and runs the matching reviewers in parallel. Full docs and reviewer breakdown: [skills/sl-overall-review/README.md](skills/sl-overall-review/README.md). |
+| [`sl-gitlab-review-comments`](skills/sl-gitlab-review-comments/) | Adds `/sl-overall-review` findings to a GitLab MR as **pending draft review notes** (inline on the diff; you click "Submit review" in GitLab to publish), phrased in a suggestive register, with preview/confirm, per-run selection of findings (by number and/or severity), idempotent re-runs, and a general-note fallback for lines outside the diff. Detects glab CLI / GitLab MCP / REST. Full docs: [skills/sl-gitlab-review-comments/README.md](skills/sl-gitlab-review-comments/README.md). |
+| [`sl-deepen-architecture`](skills/sl-deepen-architecture/) | Studies the **resting codebase** and proposes up to 3–4 high-leverage architecture improvements grounded in deep-module design (locality & leverage, _A Philosophy of Software Design_), ranked by strength. Reads context docs (CLAUDE.md / ARCHITECTURE.md / ADRs) and optionally LSP / a JetBrains-IDE MCP; runs six analysis lenses in parallel. Delivers either a self-contained HTML report (cards with Files / Problem / Solution / Benefits / Before-After SVG diagram / strength badge) saved to `.skillsland/deepen-architecture/`, or plain text with ASCII diagrams in the chat. Read-only on code. Full docs: [skills/sl-deepen-architecture/README.md](skills/sl-deepen-architecture/README.md). |
 
 ## Install a skill
 
@@ -24,7 +24,7 @@ This catalogue is consumed by the [`skills` CLI from vercel-labs](https://github
 npx skills add romus/skillsland
 
 # Non-interactive — install one skill to specific agents, no prompts
-npx skills add romus/skillsland -s overall-review -a claude-code -y
+npx skills add romus/skillsland -s sl-overall-review -a claude-code -y
 
 # Install every skill from this repo to every detected agent
 npx skills add romus/skillsland --all
@@ -52,10 +52,10 @@ The CLI also exposes `npx skills find <query>` for discovery and `npx skills lis
 npx skills update
 
 # Update one skill by name
-npx skills update overall-review
+npx skills update sl-overall-review
 
 # Update several at once
-npx skills update overall-review <other-skill>
+npx skills update sl-overall-review <other-skill>
 
 # Scope to global installs only, no prompts
 npx skills update -g -y
@@ -76,16 +76,16 @@ npx skills update -g -y
 npx skills remove
 
 # Remove a specific skill
-npx skills remove overall-review
+npx skills remove sl-overall-review
 
 # Same, using the alias
-npx skills rm overall-review
+npx skills rm sl-overall-review
 
 # Remove from global scope instead of project
-npx skills remove overall-review -g
+npx skills remove sl-overall-review -g
 
 # Remove one skill from a specific agent only
-npx skills remove -s overall-review -a claude-code
+npx skills remove -s sl-overall-review -a claude-code
 
 # Remove all project skills from every agent, no prompts (add -g for global)
 npx skills remove --all

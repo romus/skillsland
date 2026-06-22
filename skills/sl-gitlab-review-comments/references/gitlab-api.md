@@ -1,6 +1,6 @@
 # GitLab MR comment mechanics
 
-Reference for the `gitlab-review-comments` skill. The skill's default write is a
+Reference for the `sl-gitlab-review-comments` skill. The skill's default write is a
 **pending draft note** (GitLab's "Start a review" flow) — it never publishes/submits.
 The REST path is implemented in `scripts/post-comment.mjs`; the glab and MCP paths
 replicate the same rules agent-side. Sources:
@@ -68,7 +68,7 @@ Send all of: `body`, `position[position_type]=text`, `position[base_sha]`,
 `old_path` == `new_path` unless the file was renamed. The three SHAs MUST come
 from the live MR's `diff_refs` (not computed locally), or GitLab returns 400.
 
-overall-review cites `file:line` in **new-file** coordinates, so we look up by
+sl-overall-review cites `file:line` in **new-file** coordinates, so we look up by
 `new_line`. A finding whose line isn't found in any hunk → general-note fallback.
 
 ## Hunk-parsing rule
@@ -124,7 +124,7 @@ least-privilege, short-expiry **project access token** with the `api` scope.
 ## Idempotency
 
 Each note body is prefixed with a hidden marker
-`<!-- overall-review:gitlab-review-comments fp=<sha8(file|line|issue)> -->`
+`<!-- sl-overall-review:sl-gitlab-review-comments fp=<sha8(file|line|issue)> -->`
 (an HTML comment — invisible in the UI, present in the raw body). On re-run the
 poster matches the `fp` against existing **draft notes** (the `note` field) and
 **published discussions** (each note's `body`), falling back to a

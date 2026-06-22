@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// parse-findings.mjs — turn overall-review per-finding blocks into JSON.
+// parse-findings.mjs — turn sl-overall-review per-finding blocks into JSON.
 // No deps. Reads the finding text on stdin, emits a normalized document on stdout.
 // See SKILL.md Step 1 and references/gitlab-api.md for the contract.
 //
-// Input (stdin): the per-finding blocks printed by /overall-review, e.g.
+// Input (stdin): the per-finding blocks printed by /sl-overall-review, e.g.
 //   [1] critical · security-audit · auth/login.py:42
 //       Issue: SQL injection in the WHERE clause
 //       Fix:   Use a parameterized query
