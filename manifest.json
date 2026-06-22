@@ -18,6 +18,14 @@
       "description": "Add /overall-review findings to a GitLab merge request as pending draft review notes (you submit them yourself in GitLab), inline on the diff, phrased in a suggestive register, with preview/confirm, per-run selection of findings (by number and/or severity), idempotent re-runs, and general-note fallback for lines outside the diff.",
       "targets": ["claude-code", "codex"],
       "tags": ["git", "gitlab", "review", "merge-request", "code-review"]
+    },
+    {
+      "name": "deepen-architecture",
+      "path": "skills/deepen-architecture",
+      "version": "0.1.0",
+      "description": "Study the resting codebase and propose up to 3–4 high-leverage architecture improvements grounded in deep-module design (locality & leverage); rank by strength and deliver them either as a self-contained HTML proposal report (Files / Problem / Solution / Benefits / Before-After SVG / strength badge) saved to .skillsland/deepen-architecture/, or as plain text with ASCII diagrams in the chat. Read-only on code — proposes, does not implement.",
+      "targets": ["claude-code", "codex"],
+      "tags": ["architecture", "design", "refactoring", "quality", "report"]
     }
   ]
 }
