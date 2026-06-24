@@ -5,7 +5,7 @@ Review the change for scope creep - changes that go beyond the stated task.
 ## Task Description
 
 Use as the task description, in this order of preference:
-- (a) Any free-form text the user passed to `/overall-review` after the profile name (e.g. `/overall-review bug-fix "users could log in twice in a row"`).
+- (a) Any free-form text the user passed to `/sl-overall-review` after the profile name (e.g. `/sl-overall-review bug-fix "users could log in twice in a row"`).
 - (b) The user's most recent message in this conversation, if it states what was being worked on.
 - (c) The subject lines of the branch's commit messages (`git log <base>..HEAD --oneline`).
 

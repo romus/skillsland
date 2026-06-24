@@ -1,6 +1,6 @@
 ---
-name: gitlab-review-comments
-description: This skill should be used when the user asks to "post the review to GitLab", "comment on the MR", "push review comments to GitLab", "add the findings as inline comments", or invokes "/gitlab-review-comments". Takes the per-finding blocks produced by /overall-review and adds them to the matching GitLab Merge Request as pending draft review notes — inline on the diff where possible — phrased in a suggestive register and formatted as Markdown (code is wrapped so GitLab highlights it); you eyeball them in the GitLab UI and click "Submit review" to publish. Mandatory preview-and-confirm gate, per-run selection of which findings to post (explicit finding numbers and/or a severity threshold), idempotent re-runs, and a general-note fallback for lines outside the MR diff. Detects transport (glab CLI, GitLab MCP, then REST). Read-only on local code; the only external write is creating draft notes — it never publishes or submits the review.
+name: sl-gitlab-review-comments
+description: This skill should be used when the user asks to "post the review to GitLab", "comment on the MR", "push review comments to GitLab", "add the findings as inline comments", or invokes "/sl-gitlab-review-comments". Takes the per-finding blocks produced by /sl-overall-review and adds them to the matching GitLab Merge Request as pending draft review notes — inline on the diff where possible — phrased in a suggestive register and formatted as Markdown (code is wrapped so GitLab highlights it); you eyeball them in the GitLab UI and click "Submit review" to publish. Mandatory preview-and-confirm gate, per-run selection of which findings to post (explicit finding numbers and/or a severity threshold), idempotent re-runs, and a general-note fallback for lines outside the MR diff. Detects transport (glab CLI, GitLab MCP, then REST). Read-only on local code; the only external write is creating draft notes — it never publishes or submits the review.
 version: 0.3.0
 targets:
   - claude-code
@@ -13,9 +13,9 @@ allowed-tools:
 tags: [git, gitlab, review, merge-request, code-review]
 ---
 
-# GitLab Review Comments — draft overall-review findings onto a Merge Request
+# GitLab Review Comments — draft sl-overall-review findings onto a Merge Request
 
-You take the findings that `/overall-review` produced in this conversation and add them to the matching GitLab Merge Request as **pending draft review notes** — inline on the right `file:line` where possible. The notes are *not* published: the user reviews them in the GitLab UI and clicks **Submit review** to publish. Follow the steps in order.
+You take the findings that `/sl-overall-review` produced in this conversation and add them to the matching GitLab Merge Request as **pending draft review notes** — inline on the right `file:line` where possible. The notes are *not* published: the user reviews them in the GitLab UI and clicks **Submit review** to publish. Follow the steps in order.
 
 **Hard rules for the entire run:**
 - **Read-only on local code.** Do not edit, stage, or commit anything. The only external write is creating **draft** MR notes, and only after the Step 7 confirmation gate.
@@ -27,7 +27,7 @@ You take the findings that `/overall-review` produced in this conversation and a
 
 ## Step 0 — Preconditions
 
-Confirm there are `/overall-review` findings to work with **in this conversation** — the per-finding blocks of the form `[<n>] <severity> · <reviewer> · <file:line>` with `Issue:`/`Fix:` lines. If there are none, tell the user to run `/overall-review` first (or paste its output), and stop. Do not invent findings.
+Confirm there are `/sl-overall-review` findings to work with **in this conversation** — the per-finding blocks of the form `[<n>] <severity> · <reviewer> · <file:line>` with `Issue:`/`Fix:` lines. If there are none, tell the user to run `/sl-overall-review` first (or paste its output), and stop. Do not invent findings.
 
 ---
 
@@ -108,9 +108,9 @@ Compute a stable fingerprint per finding, `fp = sha8(file|line|issue)` (first 8 
 ```
 
 - **Markdown, not plain text.** Separate the header / issue / fix with **blank lines** (so they render as distinct paragraphs regardless of the instance's soft-break setting) and **bold** the labels. Wrap any code in the issue/fix text so GitLab highlights it: short identifiers/expressions in inline `` `backticks` ``; a multi-line snippet in a fenced block ```` ```<lang> … ``` ````, with `<lang>` inferred from the cited file's extension (`.py`→`python`, `.ts`→`ts`, `.js`→`js`, `.go`→`go`, `.rb`→`ruby`, `.java`→`java`, …; bare ```` ``` ```` if unknown). Optional: when the fix is a literal drop-in replacement for the cited line on an inline anchor, the fenced block may be a ```` ```suggestion ```` block.
-- **No reviewer attribution in the body.** The header is just the severity — do **not** print the reviewer name or "overall-review". (The reviewer still appears in the Step 4 list, Step 6 preview, and Step 9 report so you can tell findings apart — it is only kept out of what lands on the MR.)
+- **No reviewer attribution in the body.** The header is just the severity — do **not** print the reviewer name or "sl-overall-review". (The reviewer still appears in the Step 4 list, Step 6 preview, and Step 9 report so you can tell findings apart — it is only kept out of what lands on the MR.)
 - Use suggestive labels **in the same language as the finding text**. Examples — RU: `Возможная проблема:` / `Как можно поправить:` · EN: `Potential issue:` / `Suggested fix:`.
-- **Keep it lean.** The severity header plus those two lines, with the `<issue>`/`<fix>` wording **verbatim** from overall-review — only adding Markdown code markup around code, never rewording. Do not add extra commentary, hedging, or prose — short comments are the goal. Do not add a "draft" tag in the text; GitLab already badges pending notes.
+- **Keep it lean.** The severity header plus those two lines, with the `<issue>`/`<fix>` wording **verbatim** from sl-overall-review — only adding Markdown code markup around code, never rewording. Do not add extra commentary, hedging, or prose — short comments are the goal. Do not add a "draft" tag in the text; GitLab already badges pending notes.
 
 ---
 

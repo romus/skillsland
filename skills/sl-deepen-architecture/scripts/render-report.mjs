@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// render-report.mjs — render a deepen-architecture candidates document.
+// render-report.mjs — render a sl-deepen-architecture candidates document.
 // No deps. Node 20+. The agent emits SEMANTICS (a candidates JSON); this script
 // owns all MARKUP, in two formats from one numeric depth-spec:
 //

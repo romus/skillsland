@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// collect-context.mjs — gather resting-state architecture signals for deepen-architecture.
+// collect-context.mjs — gather resting-state architecture signals for sl-deepen-architecture.
 // No deps. Node 20+. Shells out to `git` via child_process (portable; no bash needed).
 //
 // Usage:

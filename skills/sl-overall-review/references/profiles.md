@@ -22,7 +22,7 @@ Reviewer prompts live in `reviewers/<name>.md`, one file per reviewer.
 
 ## Explicit argument — synonyms
 
-If the user passes a profile name to `/overall-review`, match it case-insensitively. Synonyms:
+If the user passes a profile name to `/sl-overall-review`, match it case-insensitively. Synonyms:
 
 - `bug`, `fix`, `bugfix` → `bug-fix`
 - `perf` → `performance`
@@ -53,9 +53,9 @@ When no explicit argument is given, run `git diff --stat <base>...HEAD` and insp
 9. **`refactor`** — mostly renames / file moves / function extractions with no behavioural deltas.
 10. **`universal`** — mixed or ambiguous (default fallback).
 
-`algorithm` has no auto-detect trigger — invoke it explicitly (`/overall-review algorithm`) when you want only the algorithm/network-efficiency lens. The `algorithm-efficiency` reviewer otherwise runs automatically inside the `performance` profile (rule 4).
+`algorithm` has no auto-detect trigger — invoke it explicitly (`/sl-overall-review algorithm`) when you want only the algorithm/network-efficiency lens. The `algorithm-efficiency` reviewer otherwise runs automatically inside the `performance` profile (rule 4).
 
-`messaging` likewise has no auto-detect trigger — invoke it explicitly (`/overall-review messaging`) when you want only the message-broker reliability lens. The `messaging-patterns` reviewer otherwise attaches automatically as an add-on whenever the diff touches broker code (see "Add-on reviewers").
+`messaging` likewise has no auto-detect trigger — invoke it explicitly (`/sl-overall-review messaging`) when you want only the message-broker reliability lens. The `messaging-patterns` reviewer otherwise attaches automatically as an add-on whenever the diff touches broker code (see "Add-on reviewers").
 
 ## Add-on reviewers
 

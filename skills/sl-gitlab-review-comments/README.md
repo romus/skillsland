@@ -1,19 +1,19 @@
-# gitlab-review-comments
+# sl-gitlab-review-comments
 
-Companion to [`overall-review`](../overall-review/). It takes the per-finding blocks that `/overall-review` printed and adds them to the matching GitLab Merge Request as **pending draft review notes** — **inline on the right `file:line`** wherever the line is part of the MR diff, and as a general MR note otherwise. Each note is phrased in a suggestive register ("this could be a problem; here's how it could be fixed") and written as **Markdown** — code in the issue/fix is wrapped so GitLab highlights it. The note body shows only the severity, not which reviewer found the issue.
+Companion to [`sl-overall-review`](../sl-overall-review/). It takes the per-finding blocks that `/sl-overall-review` printed and adds them to the matching GitLab Merge Request as **pending draft review notes** — **inline on the right `file:line`** wherever the line is part of the MR diff, and as a general MR note otherwise. Each note is phrased in a suggestive register ("this could be a problem; here's how it could be fixed") and written as **Markdown** — code in the issue/fix is wrapped so GitLab highlights it. The note body shows only the severity, not which reviewer found the issue.
 
 The drafts are **not published**: you review them in the GitLab UI and click **Submit review** to publish — a second pair of eyes on the findings, in context. It is read-only on your local code; the only external write is creating draft notes (after an explicit preview-and-confirm gate), and it never submits the review for you.
 
 ## When to use
 
-Run `/overall-review` first, then trigger this skill. Phrases the host agent recognises:
+Run `/sl-overall-review` first, then trigger this skill. Phrases the host agent recognises:
 
 - "post the review to GitLab" / "comment on the MR" / "push review comments to GitLab" / "add the findings as inline comments"
-- The slash command `/gitlab-review-comments`
+- The slash command `/sl-gitlab-review-comments`
 
 ## Workflow at a glance
 
-1. **Parse** the in-session `/overall-review` findings into structured JSON (`scripts/parse-findings.mjs`).
+1. **Parse** the in-session `/sl-overall-review` findings into structured JSON (`scripts/parse-findings.mjs`).
 2. **Detect transport** — glab CLI → GitLab MCP → REST, first available wins.
 3. **Resolve** the project (from the git remote) and the MR (from the current branch as source branch); ask if it can't be detected.
 4. **Choose what to post** — every run. Pick specific findings by number (`1,3,5`, `2-4`) and/or a minimum severity, and/or all.
@@ -46,7 +46,7 @@ glab and MCP manage their own auth — the skill never touches a token on those 
 
 ## Idempotency
 
-Each draft body carries a hidden marker (`<!-- overall-review:gitlab-review-comments fp=… -->`, invisible in the UI). On re-run the skill skips any finding whose fingerprint already exists on the MR — as a pending draft *or* an already-published discussion — so running it twice doesn't duplicate comments.
+Each draft body carries a hidden marker (`<!-- sl-overall-review:sl-gitlab-review-comments fp=… -->`, invisible in the UI). On re-run the skill skips any finding whose fingerprint already exists on the MR — as a pending draft *or* an already-published discussion — so running it twice doesn't duplicate comments.
 
 ## Output
 
