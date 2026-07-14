@@ -7,13 +7,26 @@ Codex, and 55+ other agents with a single command.
 
 ## Available skills
 
-<!-- Keep this table in sync with manifest.json -->
+<!-- Keep these tables in sync with manifest.json -->
+
+### Development
 
 | Name | Description |
 |---|---|
 | [`sl-overall-review`](skills/sl-overall-review/) | Multi-perspective code review of the current branch against a base you pick. Selects one of 11 profiles (universal / bug-fix / feature / refactor / research / performance / security / migration / algorithm / messaging / docs) and runs the matching reviewers in parallel. Full docs and reviewer breakdown: [skills/sl-overall-review/README.md](skills/sl-overall-review/README.md). |
 | [`sl-gitlab-review-comments`](skills/sl-gitlab-review-comments/) | Adds `/sl-overall-review` findings to a GitLab MR as **pending draft review notes** (inline on the diff; you click "Submit review" in GitLab to publish), phrased in a suggestive register, with preview/confirm, per-run selection of findings (by number and/or severity), idempotent re-runs, and a general-note fallback for lines outside the diff. Detects glab CLI / GitLab MCP / REST. Full docs: [skills/sl-gitlab-review-comments/README.md](skills/sl-gitlab-review-comments/README.md). |
+
+### Architecture
+
+| Name | Description |
+|---|---|
 | [`sl-deepen-architecture`](skills/sl-deepen-architecture/) | Studies the **resting codebase** and proposes up to 3–4 high-leverage architecture improvements grounded in deep-module design (locality & leverage, _A Philosophy of Software Design_), ranked by strength. Reads context docs (CLAUDE.md / ARCHITECTURE.md / ADRs) and optionally LSP / a JetBrains-IDE MCP; runs six analysis lenses in parallel. Delivers either a self-contained HTML report (cards with Files / Problem / Solution / Benefits / Before-After SVG diagram / strength badge) saved to `.skillsland/deepen-architecture/`, or plain text with ASCII diagrams in the chat. Read-only on code. Full docs: [skills/sl-deepen-architecture/README.md](skills/sl-deepen-architecture/README.md). |
+
+### Research
+
+| Name | Description |
+|---|---|
+| [`sl-arxiv-digest`](skills/sl-arxiv-digest/) | Digest of recent arXiv papers: scans **everything submitted in the requested window** (default: the last day; topics optional — defaults to `cs.AI + cs.LG`), ranks by **Semantic Scholar citation count** (disclosed newest-first fallback when the service is down), and explains the top N in 2–4 plain-language sentences in your language, original English titles kept. Chat-only output. Full docs: [skills/sl-arxiv-digest/README.md](skills/sl-arxiv-digest/README.md). |
 
 ## Install a skill
 
