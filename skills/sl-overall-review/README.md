@@ -39,9 +39,14 @@ Each profile is a fixed list of reviewers. Pick a profile by explicit argument (
 | `migration`   | migration-safety, quality, testing, dependency-audit, dead-code            | Migration-dominated diffs (only schema/migration files) |
 | `algorithm`   | algorithm-efficiency                                                       | Invoke the algorithm / network-efficiency lens on its own |
 | `messaging`   | messaging-patterns                                                         | Invoke the Kafka/RabbitMQ/Artemis reliability lens on its own |
+| `skill`       | prompt-overconstraint, prompt-context-economy, prompt-interface-design, prompt-portability, skill-discovery, skill-catalogue-integrity | The diff *is* prompt artifacts — a `SKILL.md` and its bundle, a subagent or slash-command definition, `CLAUDE.md` |
 | `docs`        | documentation                                                              | Only `*.md` / `docs/` changed                           |
 
-Synonyms accepted on the command line: `bug`/`fix`/`bugfix` → `bug-fix`, `perf` → `performance`, `sec` → `security`, `doc`/`docs` → `docs`, `feat` → `feature`, `mig` → `migration`, `ref` → `refactor`, `res` → `research`, `algo`/`alg`/`algorithms` → `algorithm`, `mq`/`kafka`/`rabbit`/`rabbitmq`/`artemis`/`jms`/`messaging` → `messaging`, `uni`/`all` → `universal`.
+Synonyms accepted on the command line: `bug`/`fix`/`bugfix` → `bug-fix`, `perf` → `performance`, `sec` → `security`, `doc`/`docs` → `docs`, `feat` → `feature`, `mig` → `migration`, `ref` → `refactor`, `res` → `research`, `algo`/`alg`/`algorithms` → `algorithm`, `mq`/`kafka`/`rabbit`/`rabbitmq`/`artemis`/`jms`/`messaging` → `messaging`, `sk`/`skills`/`agent-skill`/`agent-skills`/`prompt`/`prompts`/`prompting` → `skill`, `uni`/`all` → `universal`.
+
+### The `skill` profile
+
+The only profile that reviews **prompt artifacts instead of application code**. Its subject is the thing the agent loads: a `SKILL.md` and everything bundled with it, subagent definitions (`.claude/agents/*.md`), slash commands (`.claude/commands/*.md`), `CLAUDE.md` / `AGENTS.md`, Codex prompts.
 
 ### Add-on reviewers
 
@@ -50,6 +55,7 @@ Some signals add a single lens on top of the base profile instead of switching t
 - **`migration-safety`** — added when a diff touches schema/migration artifacts (schema-DDL `*.sql`, ORM column add/drop/type changes, migration directories) but is *not* migration-dominated. This is why a stray `.sql` inside a feature diff no longer collapses the whole review into the `migration` profile — you keep the general review and gain the safety lens.
 - **`dependency-audit`** — added when dependency manifests change alongside other code (the dependency-only case stays a full `security` variant).
 - **`messaging-patterns`** — added when the diff touches message-broker code (`@KafkaListener`/`@RabbitListener`/`@JmsListener`, Kafka Streams topologies, Kafka/AMQP/JMS clients, or broker config). Layers the broker-reliability lens on top so message-loss bugs are caught inside any base profile.
+- **`prompt-overconstraint`** — added when the diff touches a prompt artifact (`SKILL.md`, `.claude/agents/*.md`, `.claude/commands/*.md`, `CLAUDE.md`, `AGENTS.md`) but is *not* prompt-artifact-dominated. A `CLAUDE.md` tweak riding along with a feature keeps its base profile and gains the one `skill` lens worth spending on a stray prompt edit: a rule added next to a code change is the likeliest to contradict what another layer already says, and a contradiction costs every later run.
 
 ## Reviewers
 
@@ -278,6 +284,78 @@ Also for research artefacts — flags unsupported claims and hand-wavy reasoning
 - Citations for specific behaviour (commit SHA, doc URL, code line)
 - No outdated references to deleted code or removed APIs
 
+### prompt-overconstraint
+
+The `skill` profile's headline lens, and the one that attaches as an add-on. Flags rules that are wrong for a legitimate subset of requests, and instructions the model must spend reasoning reconciling rather than acting on.
+
+- Categorical absolutes — `Never …`, `ALWAYS …`, hard caps, `Don't … unless the user asks`
+- Direct contradictions across three seams: inside one file, between a `SKILL.md` and its `references/`, and between the artifact and the `CLAUDE.md` it loads beside
+- Prescribed step-by-step procedure where the goal plus the tools would do
+- Emphasis inflation that devalues emphasis where it matters
+- Constraints with no stated rationale, so nobody downstream dares remove them
+- Guidance written as if the author knows the user's request
+- **Does not flag** guardrails on high-stakes areas — read-only guarantees, confirm gates, no-commit rules
+
+### prompt-context-economy
+
+Context that is always loaded but only sometimes needed.
+
+- A monolith that should be a tree of files loaded at the right time
+- The "central repository for every known practice" myth in practice
+- The same instruction in two places — one home per instruction
+- Tool usage documented in the prompt body instead of the tool's own description
+- A closing recap written for a positional recency bias that no longer exists
+- Stating the obvious — anything derivable by looking at the repo
+- A `CLAUDE.md` spending its tokens on repo shape instead of **gotchas**
+- **Never proposes deleting** rare-but-crucial content — that moves behind progressive disclosure; and a format spec a downstream consumer parses is a contract, not verbosity
+
+### prompt-interface-design
+
+Narrating what the artifact could encode.
+
+- Tool-usage examples where an expressive parameter or enum would teach it for free
+- Parameters that need prose to explain — bare strings where an enum belongs
+- Prose where the artifact itself is higher fidelity (mockup > description > screenshot; a spec may be a test suite)
+- Taste stated as prose where a rubric would let a verifier apply it
+- A helper script whose contract lives in the prompt instead of `--help`
+- **Scoped to tool/interface examples** — output templates and reference artifacts are recommended, not findings
+
+### prompt-portability
+
+The artifact assumes a runtime it does not have.
+
+- Claude Code-only tools (`Agent`, `AskUserQuestion`, `LSP`, `Artifact`) with no inline fallback while `targets:` declares `codex`
+- `allowed-tools:` narrower than what the body invokes, or listing tools never used
+- Output needing a Markdown renderer — tables become pipe-noise in Codex CLI
+- Bundle paths that break when Codex flattens the skill into one `~/.codex/prompts/<name>.md`
+- bash-4 syntax on macOS bash 3, GNU flags on BSD userland
+- `jq` / `gh` / `glab` used without a presence probe
+- Referenced files missing from the bundle, or bundled files nothing references
+
+### skill-discovery
+
+Whether the artifact ever loads. Not from the article — the article says nothing about frontmatter or skill selection; this is repo convention.
+
+- `description` with no literal trigger phrase — a tagline, not a discovery key
+- Missing the `/<name>` invocation form
+- Triggers only in English where the repo's skills carry the user's other working languages
+- No `NOT for …` clause against a plausible near-neighbour
+- Trigger phrases overlapping a sibling, making selection arbitrary
+- `name` not matching the directory; missing or non-semver `version`
+- Description promising what the body doesn't deliver, or hiding a limit it enforces
+- **Skips** always-loaded artifacts (`CLAUDE.md`, `AGENTS.md`) — they aren't selected by description
+
+### skill-catalogue-integrity
+
+The one repo-specific lens. Returns nothing unless the repo is a skills catalogue — it checks for a `manifest.json` with a `skills` array first and stops if there is none.
+
+- Manifest `name`/`version` vs `SKILL.md` frontmatter — the validator enforces equality
+- Orphan `skills/<dir>` with no manifest entry; a manifest `path` that doesn't exist
+- The hand-maintained surfaces CI does **not** check: the root README "Available skills" tables and "Repo layout" block
+- Counts asserted in prose — verified against the filesystem, not trusted
+- A format change without checking its downstream consumer (`sl-gitlab-review-comments` parses these very blocks)
+- Bundled files nothing references, or referenced paths not in the bundle
+
 ## Output format
 
 The skill replies with one block per finding plus a summary line. Example:
@@ -308,4 +386,5 @@ Severity scale:
 - [`SKILL.md`](SKILL.md) — the prompt the host agent loads
 - [`scripts/list-base-branches.sh`](scripts/list-base-branches.sh) — emits JSON of candidate base branches (Step 1)
 - [`references/profiles.md`](references/profiles.md) — full profile-to-reviewer mapping, auto-detect rules, synonyms (Step 4)
-- [`references/reviewers/<name>.md`](references/reviewers/) — 18 reviewer prompts, one per file (Step 5)
+- [`references/reviewers/<name>.md`](references/reviewers/) — 25 reviewer prompts, one per file (Step 5)
+- [`references/prompt-principles.md`](references/prompt-principles.md) — shared context-engineering principles the `skill` profile's six reviewers grade against (Step 5)

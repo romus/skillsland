@@ -1,7 +1,7 @@
 ---
 name: sl-overall-review
-description: This skill should be used when the user asks to "review my changes", "do an overall review", "review this branch", "code review against main", or invokes "/sl-overall-review" (optionally with a profile name like "/sl-overall-review security", "/sl-overall-review performance", "/sl-overall-review bug-fix"). Interactively asks which base branch to compare against, picks a review profile (universal, bug-fix, feature, refactor, research, performance, security, migration, algorithm, messaging, docs) either from an explicit argument or by auto-detecting from the diff, runs the matching reviewers in parallel, and outputs the findings as per-finding blocks in the user's language. Does NOT modify code, does NOT commit, does NOT propose to apply fixes — review and report only.
-version: 0.6.0
+description: This skill should be used when the user asks to "review my changes", "do an overall review", "review this branch", "code review against main", "review this skill", "review my SKILL.md", or invokes "/sl-overall-review" (optionally with a profile name like "/sl-overall-review security", "/sl-overall-review performance", "/sl-overall-review bug-fix", "/sl-overall-review skill"). Interactively asks which base branch to compare against, picks a review profile (universal, bug-fix, feature, refactor, research, performance, security, migration, algorithm, messaging, skill, docs) either from an explicit argument or by auto-detecting from the diff, runs the matching reviewers in parallel, and outputs the findings as per-finding blocks in the user's language. The `skill` profile reviews prompt artifacts themselves — SKILL.md and its bundle, subagent and slash-command definitions, CLAUDE.md — against context-engineering principles for Claude 5 generation models. Does NOT modify code, does NOT commit, does NOT propose to apply fixes — review and report only.
+version: 0.7.0
 targets:
   - claude-code
   - codex
@@ -89,6 +89,8 @@ A "profile" is a fixed list of reviewers to run. See `references/profiles.md` fo
 
 Read `references/profiles.md` to get the list of reviewers for the chosen profile, plus any add-on reviewers selected in Step 4. For each reviewer in that combined list, read `references/reviewers/<reviewer-name>.md` to get its prompt verbatim.
 
+If a reviewer prompt tells the reviewer to read a sibling reference file (the `skill` profile's reviewers all point at `references/prompt-principles.md`), read that file too and pass its content to the sub-agent verbatim alongside the reviewer prompt — the sub-agent may not be able to resolve the path itself.
+
 **Execution mode — pick one based on your runtime:**
 
 - **Claude Code (sub-agent / Agent tool available):** launch **one sub-agent per reviewer in the profile, all in a single message, all in parallel** (multiple Agent tool calls in one assistant turn, `subagent_type=general-purpose`). Each sub-agent receives:
@@ -161,5 +163,6 @@ That's the whole response. Stop after the summary line.
 ## Bundled resources
 
 - `scripts/list-base-branches.sh` — emits JSON of candidate base branches (Step 1)
-- `references/profiles.md` — 10 profiles → reviewers mapping, auto-detect rules, synonyms (Step 4)
-- `references/reviewers/<name>.md` — 18 reviewer prompts, one per file (Step 5)
+- `references/profiles.md` — 12 profiles → reviewers mapping, auto-detect rules, synonyms (Step 4)
+- `references/reviewers/<name>.md` — 25 reviewer prompts, one per file (Step 5)
+- `references/prompt-principles.md` — shared context-engineering principles the `skill` profile's reviewers grade against (Step 5)

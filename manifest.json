@@ -6,8 +6,8 @@
     {
       "name": "sl-overall-review",
       "path": "skills/sl-overall-review",
-      "version": "0.6.0",
-      "description": "Interactively pick a base branch, pick a review profile (universal/bug-fix/feature/refactor/research/performance/security/migration/algorithm/messaging/docs), and run the matching reviewers in parallel against the diff. Outputs the findings as per-finding blocks.",
+      "version": "0.7.0",
+      "description": "Interactively pick a base branch, pick a review profile (universal/bug-fix/feature/refactor/research/performance/security/migration/algorithm/messaging/skill/docs), and run the matching reviewers in parallel against the diff. The `skill` profile reviews prompt artifacts themselves (SKILL.md and its bundle, subagents, slash commands, CLAUDE.md) against context-engineering principles for Claude 5 generation models. Outputs the findings as per-finding blocks.",
       "targets": ["claude-code", "codex"],
       "tags": ["git", "review", "quality"]
     },
