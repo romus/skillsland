@@ -8,32 +8,82 @@
       "path": "skills/sl-overall-review",
       "version": "0.7.0",
       "description": "Interactively pick a base branch, pick a review profile (universal/bug-fix/feature/refactor/research/performance/security/migration/algorithm/messaging/skill/docs), and run the matching reviewers in parallel against the diff. The `skill` profile reviews prompt artifacts themselves (SKILL.md and its bundle, subagents, slash commands, CLAUDE.md) against context-engineering principles for Claude 5 generation models. Outputs the findings as per-finding blocks.",
-      "targets": ["claude-code", "codex"],
-      "tags": ["git", "review", "quality"]
+      "targets": [
+        "claude-code",
+        "codex"
+      ],
+      "tags": [
+        "git",
+        "review",
+        "quality"
+      ]
     },
     {
       "name": "sl-gitlab-review-comments",
       "path": "skills/sl-gitlab-review-comments",
       "version": "0.3.0",
       "description": "Add /sl-overall-review findings to a GitLab merge request as pending draft review notes (you submit them yourself in GitLab), inline on the diff, phrased in a suggestive register, with preview/confirm, per-run selection of findings (by number and/or severity), idempotent re-runs, and general-note fallback for lines outside the diff.",
-      "targets": ["claude-code", "codex"],
-      "tags": ["git", "gitlab", "review", "merge-request", "code-review"]
+      "targets": [
+        "claude-code",
+        "codex"
+      ],
+      "tags": [
+        "git",
+        "gitlab",
+        "review",
+        "merge-request",
+        "code-review"
+      ]
     },
     {
       "name": "sl-deepen-architecture",
       "path": "skills/sl-deepen-architecture",
       "version": "0.1.0",
       "description": "Study the resting codebase and propose up to 3–4 high-leverage architecture improvements grounded in deep-module design (locality & leverage); rank by strength and deliver them either as a self-contained HTML proposal report (Files / Problem / Solution / Benefits / Before-After SVG / strength badge) saved to .skillsland/deepen-architecture/, or as plain text with ASCII diagrams in the chat. Read-only on code — proposes, does not implement.",
-      "targets": ["claude-code", "codex"],
-      "tags": ["architecture", "design", "refactoring", "quality", "report"]
+      "targets": [
+        "claude-code",
+        "codex"
+      ],
+      "tags": [
+        "architecture",
+        "design",
+        "refactoring",
+        "quality",
+        "report"
+      ]
     },
     {
       "name": "sl-arxiv-digest",
       "path": "skills/sl-arxiv-digest",
       "version": "0.1.0",
       "description": "Multi-paper digest of recent arXiv papers (optional topics, default categories cs.AI + cs.LG, window default the last day), ranked by Semantic Scholar citation count with a disclosed newest-first fallback; each top paper explained in 2–4 plain-language sentences in the user's language, original English titles kept. Chat-only output.",
-      "targets": ["claude-code", "codex"],
-      "tags": ["research", "arxiv", "papers", "digest", "citations"]
+      "targets": [
+        "claude-code",
+        "codex"
+      ],
+      "tags": [
+        "research",
+        "arxiv",
+        "papers",
+        "digest",
+        "citations"
+      ]
+    },
+    {
+      "name": "sl-hol-guard",
+      "path": "skills/sl-hol-guard",
+      "version": "0.1.0",
+      "description": "Set up and operate HOL Guard around local coding-agent runtimes so tool and command execution is mediated by Guard, with fail-closed setup, approval review, receipts, and optional plugin or skill package verification.",
+      "targets": [
+        "claude-code",
+        "codex"
+      ],
+      "tags": [
+        "security",
+        "agent-safety",
+        "runtime",
+        "hol-guard"
+      ]
     }
   ]
 }
