@@ -28,6 +28,12 @@ Codex, and 55+ other agents with a single command.
 |---|---|
 | [`sl-arxiv-digest`](skills/sl-arxiv-digest/) | Digest of recent arXiv papers: scans **everything submitted in the requested window** (default: the last day; topics optional — defaults to `cs.AI + cs.LG`), ranks by **Semantic Scholar citation count** (disclosed newest-first fallback when the service is down), and explains the top N in 2–4 plain-language sentences in your language, original English titles kept. Chat-only output. Full docs: [skills/sl-arxiv-digest/README.md](skills/sl-arxiv-digest/README.md). |
 
+### Security
+
+| Name | Description |
+|---|---|
+| [`sl-hol-guard`](skills/sl-hol-guard/) | Set up HOL Guard around local coding-agent runtimes, verify protection before use, review approvals and receipts, and optionally verify plugin or skill packages. The workflow installs and invokes the real `hol-guard` CLI instead of substituting a prompt-only deny-list. |
+
 ## Install a skill
 
 This catalogue is consumed by the [`skills` CLI from vercel-labs](https://github.com/vercel-labs/skills) (`npx skills`). It works with 55+ agents — Claude Code, Codex, Cursor, Gemini CLI, Warp, OpenCode, GitHub Copilot, and many more — and offers an interactive picker for both the target agent and the install scope.
