@@ -124,7 +124,7 @@ least-privilege, short-expiry **project access token** with the `api` scope.
 ## Idempotency
 
 Each note body is prefixed with a hidden marker
-`<!-- sl-overall-review:sl-gitlab-review-comments fp=<sha8(file|line|issue)> -->`
+`<!-- sl-overall-review:sl-gitlab-review-comments fp=<sha8(file|line|actual)> -->`
 (an HTML comment — invisible in the UI, present in the raw body). On re-run the
 poster matches the `fp` against existing **draft notes** (the `note` field) and
 **published discussions** (each note's `body`), falling back to a
@@ -133,9 +133,12 @@ anything already present.
 
 ## Script contracts
 
-- `scripts/parse-findings.mjs` — finding-block text on **stdin** →
-  `{findings:[{n,severity,reviewers,file,line,issue,fix}], summary, warnings}` on
-  stdout. Exit 0 always (empty → warning), 2 if stdin unreadable.
+- `scripts/parse-findings.mjs` — `/sl-overall-review` report text on **stdin** →
+  `{findings:[{id,category,severity,severity_label,reviewers,file,line,intended,actual,example,fix}], summary:{count,profile}, warnings}`
+  on stdout. Parses by indentation (header at indent 0–3, `Reviewer:` line 1–3,
+  field rows 4–8, continuations 9+); known English/Russian labels are matched by
+  name, others by position with a warning. `severity` ∈ `blocker | should |
+  optional | null`. Exit 0 always (empty → warning), 2 if stdin unreadable.
 - `scripts/post-comment.mjs` — job JSON on **stdin**, `GITLAB_TOKEN` (+ optional
   `GITLAB_HOST`) in **env** → `{results, summary}` on stdout. The job's `draft`
   flag defaults to **true** (create draft notes; `false` posts published
