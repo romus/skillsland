@@ -1,8 +1,8 @@
 # sl-overall-review
 
-End-to-end code review of the changes on your current branch against a base branch you pick. The skill runs a fixed set of independent reviewers in parallel (one per concern), consolidates and de-duplicates the findings, and prints them as plain-text per-finding blocks that read well in both Claude Code and Codex CLI.
+End-to-end code review of the changes on your current branch against a base branch you pick. The skill runs a fixed set of independent reviewers in parallel (one per concern), consolidates and de-duplicates the findings, and prints a plain-text report that reads well in both Claude Code and Codex CLI: what the change does in plain words, then each finding as intended / actually / example / fix, then a merge verdict.
 
-It does **not** modify code, run tests, commit, or offer to apply fixes — review and report only.
+It does **not** modify code, run tests, or commit — review and report only. The report ends with a one-line hint of what to reply if you want the blockers fixed.
 
 ## When to use
 
@@ -17,11 +17,11 @@ The skill prompts for the base branch interactively (offers `main`/`master`, cur
 
 1. **Collect base-branch candidates** via `scripts/list-base-branches.sh`.
 2. **Ask the user** which base to diff against.
-3. **Compute** `git merge-base`, `git diff`, and `git log <base>..HEAD` as shared context.
+3. **Compute** `git merge-base`, `git diff`, and `git log <base>..HEAD` as shared context, and write down in plain words what the change is for (kept out of the reviewers' briefs so it doesn't anchor them).
 4. **Pick a profile** — explicit argument wins; otherwise auto-detect from the diff (paths, file types, commit messages). Then layer on any matching add-on reviewers (e.g. `migration-safety` when a schema change rides along with app code).
 5. **Run the profile's reviewers (plus any add-ons) in parallel** — one sub-agent per reviewer in Claude Code; same prompt in Codex with a push to split into parallel sub-agents (or sequentially with a clean lens-switch as fallback).
-6. **Consolidate**: re-read each cited location, discard false positives, deduplicate, assign severity (`critical`/`major`/`minor`/`nit`).
-7. **Output** per-finding blocks + one summary line. That's the entire reply.
+6. **Consolidate**: re-read each cited location, discard false positives, deduplicate, assign severity (`blocker`/`should fix`/`optional`) and category (bug / improvement), and rewrite each finding as intended / actually / example / fix.
+7. **Output** the report: plain-language summary → findings → verdict + fix hint. That's the entire reply.
 
 ## Profiles
 
@@ -358,28 +358,74 @@ The one repo-specific lens. Returns nothing unless the repo is a skills catalogu
 
 ## Output format
 
-The skill replies with one block per finding plus a summary line. Example:
+The reply is one plain-text report inside a single code fence: it keeps its column alignment in Claude Code and reads as-is in Codex CLI (no Markdown tables — they collapse into pipe-noise without a renderer). Labels follow the user's language; IDs, paths and reviewer names stay verbatim. Three sections:
+
+1. **The change in plain words** — what was there before, what the change does now, and a tiny glossary for any term the report uses later.
+2. **Findings** — split into **bugs** (`B1`, `B2`, …: the code does something wrong or unsafe in a realistic scenario) and **improvements** (`I1`, `I2`, …: it works, but could be better), grouped by reviewer. Each finding has four rows: what the change *intended* here, what the code *actually* does, a concrete *example* ending in the visible consequence, and a one-line *fix*.
+3. **Verdict** — merge or not, one to three sentences on why, and the IDs bucketed by severity — followed by a one-line hint of what to reply to get the blockers fixed.
+
+Abridged example:
 
 ```
-[1] critical · security-audit · auth/login.py:42
-    Issue: SQL injection in the WHERE clause via unescaped user.name
-    Fix:   Use parameterized query (cursor.execute("... WHERE name = ?", (name,)))
+CODE REVIEW · feat/login → main · 3 files · +40 −2 · profile: security
 
-[2] major · quality, error-handling · api/users.py:88
-    Issue: Missing null check on user.name; raises AttributeError on anonymous
-    Fix:   Add guard before .name access (if not user or not user.name: return)
+Log in by username, not only by email
 
-2 issues across 3 reviewers — profile: security
+
+01  THE CHANGE — IN PLAIN WORDS
+
+    Users could only log in with their email address. Now the login form
+    also accepts a username.
+
+
+02  FINDINGS   1 bug · 1 improvement · 1 blocks the merge
+
+BUGS
+
+  Reviewer: quality, security-audit
+
+  B1  blocker     auth/login.py:42
+      intended  Look the user up by the name they typed.
+      actually  The name is pasted into the SQL query as-is.
+      example   Someone types  ' OR 1=1 --  as the name → the query matches
+                every user → they are logged in as the first one.
+                Anyone can log in as the admin without a password.
+      fix       Pass the name as a query parameter instead of pasting it in.
+
+IMPROVEMENTS
+
+  Reviewer: testing
+
+  I1  optional    auth/login.py:40
+      intended  Usernames work the same as emails.
+      actually  No test logs in with a username.
+      example   A later refactor drops the username branch → all tests
+                stay green.
+                Username login silently stops working.
+      fix       Add a test that logs in with a username.
+
+
+03  VERDICT
+
+    Don't merge yet: fix B1 first.
+
+    The feature works, but B1 lets anyone log in as any user.
+
+    blocker     B1
+    optional    I1
+
+To fix, reply: fix B1
 ```
 
-Sort order: `critical` → `major` → `minor` → `nit`. Within a severity bucket, alphabetic by reviewer name, then by file path. Numbering follows the final sorted order. If two reviewers flag the same `file:line` + issue, they're merged into one block (both names comma-separated in the header).
+Order: bugs before improvements; inside a category, reviewer groups ordered by their most severe finding; inside a group, by severity, then file path. If two reviewers flag the same `file:line` + issue, they're merged into one finding under both names.
 
 Severity scale:
 
-- `critical` — production data loss, security breach, hard crash on common input, broken shipped contract
-- `major` — wrong behaviour in plausible cases, missing tests on a risky change, regression risk, performance cliff under realistic load
-- `minor` — code smell with limited impact, missing-but-not-critical docs/log/metric
-- `nit` — cosmetic, naming, light polish
+- `blocker` — production data loss, security breach, hard crash on common input, broken shipped contract (bugs only)
+- `should fix` — wrong behaviour in plausible cases, missing tests on a risky change, regression risk, performance cliff under realistic load, lock-contending migration DDL
+- `optional` — code smell with limited impact, missing-but-not-critical docs/log/metric, cosmetic issues, naming
+
+The layout is parsed by [`sl-gitlab-review-comments`](../sl-gitlab-review-comments/) (by indentation), so it is a contract between the two skills.
 
 ## Bundled resources
 
