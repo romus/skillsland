@@ -20,9 +20,12 @@ cross-runtime authoring conventions in `CLAUDE.md`.
    same step, rather than branching the file.
 2. `allowed-tools:` disagreeing with the body → narrower than what the body invokes means the
    call is refused at runtime; wider means the artifact asks for permissions it never uses.
-3. User-facing output that needs a Markdown renderer — tables, nested lists, collapsed
-   sections → in Codex CLI a `| col | col |` table collapses into pipe-noise. The convention
-   here is per-finding blocks; check the artifact's output spec against a plain-text terminal.
+3. User-facing output that needs more than standard Markdown — raw HTML, collapsed
+   sections, Mermaid — or a table too wide for a terminal → Claude Code and Codex CLI
+   (0.131+) both render standard Markdown, tables included, but Codex re-flows a table that
+   doesn't fit into stacked records, so many columns or long cells turn unreadable. The
+   convention here is at most a short overview table, with the details in lists or prose;
+   check the artifact's output spec against a narrow terminal.
 4. Path assumptions that break when Codex flattens a skill into a single
    `~/.codex/prompts/<name>.md` → a bundled reference or script addressed by a path that
    isn't resolved relative to the skill directory (`${SKILL_DIR:-$(dirname "$0")}` is the
@@ -48,7 +51,7 @@ For each issue:
 - Location: exact file path and line number (the invocation, the frontmatter key, the output
   spec, or the script line)
 - Issue: which runtime assumption is unmet, and which declared target breaks
-- Impact: what the user sees — a refused tool call, pipe-noise output, a dangling path, or a
+- Impact: what the user sees — a refused tool call, unreadable output, a dangling path, or a
   hard failure on a machine without the binary
 - Fix: specific suggestion (e.g. add a one-line stdin fallback beside the `AskUserQuestion`
   call; resolve the reference via `${SKILL_DIR}`; probe for `jq` and fall back to `grep`)
@@ -66,7 +69,8 @@ sibling artifacts before assuming `codex` is in scope.
 A Claude Code-only tool with no inline fallback while `targets:` declares `codex` is at least
 `major` — the artifact does not work in a runtime it advertises. Same floor for a bundled
 script that fails on the platform the repo targets. `allowed-tools:` narrower than the body
-is `major` (the call is refused); wider is `minor`. Markdown-only output where plain text is
-a declared target is `major` if it is the primary user-facing output, `minor` otherwise.
+is `major` (the call is refused); wider is `minor`. Output that needs more than standard
+Markdown, or a table too wide for a terminal, is `major` if it is the primary user-facing
+output, `minor` otherwise.
 
 Report problems only - no positive observations.

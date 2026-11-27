@@ -1,12 +1,12 @@
 # sl-gitlab-review-comments
 
-Companion to [`sl-overall-review`](../sl-overall-review/). It takes the findings from the report `/sl-overall-review` printed (the `B1…`/`I1…` blocks with intended / actually / example / fix) and adds them to the matching GitLab Merge Request as **pending draft review notes** — **inline on the right `file:line`** wherever the line is part of the MR diff, and as a general MR note otherwise. Each note is phrased in a suggestive register ("this could be a problem; here's how it could be fixed") and written as **Markdown** — code in the finding text is wrapped so GitLab highlights it. The note body shows only the severity, not which reviewer found the issue.
+Companion to [`sl-overall-review`](../sl-overall-review/). It takes the findings from the report `/sl-overall-review` printed (the `B1…`/`I1…` finding blocks with intended / actually / why it matters / fix) and adds them to the matching GitLab Merge Request as **pending draft review notes** — **inline on the right `file:line`** wherever the line is part of the MR diff, and as a general MR note otherwise. Each note is phrased in a suggestive register ("this could be a problem; here's how it could be fixed") and written as **Markdown** — code in the finding text is wrapped so GitLab highlights it. The note body shows only the severity, not which reviewer found the issue.
 
 The drafts are **not published**: you review them in the GitLab UI and click **Submit review** to publish — a second pair of eyes on the findings, in context. It is read-only on your local code; the only external write is creating draft notes (after an explicit preview-and-confirm gate), and it never submits the review for you.
 
 ## When to use
 
-Run `/sl-overall-review` first, then trigger this skill. Phrases the host agent recognises:
+Run `/sl-overall-review` first, then trigger this skill. It needs a report from `sl-overall-review` `0.9.0` or newer — the older indented layout is not parsed, so update both skills together. Phrases the host agent recognises:
 
 - "post the review to GitLab" / "comment on the MR" / "push review comments to GitLab" / "add the findings as inline comments"
 - The slash command `/sl-gitlab-review-comments`
@@ -48,7 +48,7 @@ glab and MCP manage their own auth — the skill never touches a token on those 
 
 Each draft body carries a hidden marker (`<!-- sl-overall-review:sl-gitlab-review-comments fp=… -->`, invisible in the UI). On re-run the skill skips any finding whose fingerprint already exists on the MR — as a pending draft *or* an already-published discussion — so running it twice doesn't duplicate comments.
 
-The fingerprint is computed from the finding's file, line and *actually* text. Drafts created by v0.3.0 (fingerprinted from the old `Issue:` text) are not recognised as duplicates by v0.4.0 — clear them in GitLab before re-running on the same MR.
+The fingerprint is computed from the finding's file, line and *actually* text. Drafts created from a report in the older layout (v0.4.0 and earlier) carry a different *actually* text, so v0.5.0 does not recognise them as duplicates — clear them in GitLab before re-running on the same MR.
 
 ## Output
 
@@ -69,7 +69,7 @@ Summary: 2 inline, 1 general note, 1 dup-skipped, 0 unverified — MR !87 (group
 Submit at: https://gitlab.com/group/sub/repo/-/merge_requests/87
 ```
 
-## Limitations (v0.4.0)
+## Limitations (v0.5.0)
 
 - Creates **draft notes only** — you click "Submit review" in GitLab to publish. The skill never submits for you.
 - Single-line comments only — multi-line ranges (`position[line_range]`) are not yet supported.
@@ -78,6 +78,6 @@ Submit at: https://gitlab.com/group/sub/repo/-/merge_requests/87
 ## Bundled resources
 
 - [`SKILL.md`](SKILL.md) — the prompt the host agent loads
-- [`scripts/parse-findings.mjs`](scripts/parse-findings.mjs) — report text → JSON, parsed by indentation so translated labels still work (Step 1)
+- [`scripts/parse-findings.mjs`](scripts/parse-findings.mjs) — report text → JSON, parsed by Markdown structure, so a report in any language works (Step 1)
 - [`scripts/post-comment.mjs`](scripts/post-comment.mjs) — REST poster; classifies, dedupes, creates draft notes (Step 8)
 - [`references/gitlab-api.md`](references/gitlab-api.md) — endpoints, position rule, hunk rule, glab form, token notes
