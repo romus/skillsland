@@ -134,11 +134,14 @@ anything already present.
 ## Script contracts
 
 - `scripts/parse-findings.mjs` — `/sl-overall-review` report text on **stdin** →
-  `{findings:[{id,category,severity,severity_label,reviewers,file,line,intended,actual,example,fix}], summary:{count,profile}, warnings}`
-  on stdout. Parses by indentation (header at indent 0–3, `Reviewer:` line 1–3,
-  field rows 4–8, continuations 9+); known English/Russian labels are matched by
-  name, others by position with a warning. `severity` ∈ `blocker | should |
-  optional | null`. Exit 0 always (empty → warning), 2 if stdin unreadable.
+  `{findings:[{id,category,severity,severity_label,title,reviewers,file,line,intended,actual,impact,fix}], summary:{count}, warnings}`
+  on stdout. Parses by Markdown structure: a heading `### <ID> · <title> ·
+  <severity>`, the line under it (`` `<file>:<line>` · <reviewer>[, <reviewer>] ``),
+  then four bullets read by position (intended, actual, impact, fix) — bullet
+  labels are never interpreted, so a report in any language parses. A finding ends
+  at the next heading or `---`. Only the severity label is matched by name
+  (English/Russian). `severity` ∈ `blocker | should | optional | null`. Exit 0
+  always (empty → warning), 2 if stdin unreadable.
 - `scripts/post-comment.mjs` — job JSON on **stdin**, `GITLAB_TOKEN` (+ optional
   `GITLAB_HOST`) in **env** → `{results, summary}` on stdout. The job's `draft`
   flag defaults to **true** (create draft notes; `false` posts published

@@ -1,39 +1,39 @@
 #!/usr/bin/env node
-// parse-findings.mjs — turn the sl-overall-review report (v0.8+) into JSON.
+// parse-findings.mjs — turn the sl-overall-review report (v0.9+) into JSON.
 // No deps. Reads the report text on stdin, emits a normalized document on stdout.
 // See SKILL.md Step 1 and references/gitlab-api.md for the contract.
 //
-// Input (stdin): the report printed by /sl-overall-review, e.g.
-//   CODE REVIEW · feat/login → main · 3 files · +40 −2 · profile: security
+// Input (stdin): the Markdown report printed by /sl-overall-review, e.g.
+//   **Don't merge.** 1 blocker: B1
 //   ...
-//   BUGS
+//   ### B1 · Login query is open to injection · blocker
+//   `auth/login.py:42` · quality, security-audit
 //
-//     Reviewer: security-audit
+//   - **Intended:** Look the user up by the name they typed.
+//   - **Actually:** The name is pasted into the SQL string unescaped.
+//   - **Why it matters:** The name `' OR 1=1 --` matches every row, so anyone
+//     logs in as the first user, usually the admin.
+//   - **Fix:** Pass the name as a query parameter.
 //
-//     B1  blocker     auth/login.py:42
-//         intended  Look the user up by the name they typed.
-//         actually  The name is pasted into the SQL string unescaped.
-//         example   Name ' OR 1=1 -- → the query matches every row →
-//                   logged in as the first user, usually the admin.
-//         fix       Use a parameterized query.
-//
-// Parsing goes by indentation, not by words, so translated labels still parse:
-//   finding header  indent 0-3  <B|I><n>  <severity label>  <file>:<line>
-//   reviewer line   indent 1-3  <label>: <name>[, <name>]
-//   field row       indent 4-8  <label>  <text>   (2+ spaces between them)
-//   continuation    indent 9+   appended to the current field
-//   any other line at column 0 (a section/category heading, the hint) ends the finding.
-// Known labels (English, Russian) are matched by name; any other label is read by
-// position (intended, actual, example, fix) with a warning.
+// Parsing goes by structure, not by words, so a report in any language parses:
+//   heading        #{1,6} <B|I><n> · <title> · <severity label>
+//   location line  the first non-blank line under the heading:
+//                  `<file>:<line>` · <reviewer>[, <reviewer>]   (backticks optional)
+//   bullets        "- **<label>:** <text>" — read by position: intended, actual,
+//                  impact, fix. The label text itself is never interpreted.
+//   continuation   any other line inside a finding is appended to the last bullet
+//   end            the next heading, a horizontal rule (---), or end of input.
+// Everything outside a finding (verdict, summary, overview table, hint) is ignored.
+// Only the severity label is matched by name (English, Russian).
 //
 // Output (stdout):
 //   {
 //     "findings": [
 //       {"id":"B1","category":"bug","severity":"blocker","severity_label":"blocker",
-//        "reviewers":["security-audit"],"file":"auth/login.py","line":42,
-//        "intended":"...","actual":"...","example":"...","fix":"..."}
+//        "title":"...","reviewers":["security-audit"],"file":"auth/login.py","line":42,
+//        "intended":"...","actual":"...","impact":"...","fix":"..."}
 //     ],
-//     "summary": {"count":1,"profile":"security"},
+//     "summary": {"count":1},
 //     "warnings": ["..."]
 //   }
 // severity is "blocker" | "should" | "optional", or null when the label is unknown.
@@ -41,30 +41,26 @@
 
 import { readFileSync } from "node:fs";
 
-const HEADER = /^ {0,3}([BI])(\d+) {2,}(\S.*?) {2,}(\S.*?):(\d+)$/;
-const HEADER_NO_LINE = /^ {0,3}[BI]\d+ {2,}\S/;
-const REVIEWER = /^ {1,3}([^\s:][^:]*?):\s+(\S.*)$/;
-const FIELD_ROW = /^(\S.*?) {2,}(\S.*)$/; // applied to the trimmed line
-const PROFILE = /·\s*[^·:]+:\s*([^·]+?)$/;
+const HEADING = /^#{1,6}\s+(.*\S)\s*$/;
+const FINDING_ID = /^([BI])(\d+)$/i;
+const RULE = /^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/;
+const BULLET = /^\s*[-*+]\s+(.*)$/;
+const BOLD_LABEL = /^(?:\*\*|__)(.+?)(?:\*\*|__)\s*:?\s*(.*)$/;
+const LOCATION = /^(.+):(\d+)$/;
 
-const FIELDS = ["intended", "actual", "example", "fix"];
-const FIELD_LABELS = {
-  intended: ["intended", "хотели"],
-  actual: ["actually", "actual", "на деле"],
-  example: ["example", "пример"],
-  fix: ["fix", "поправить"],
-};
+const FIELDS = ["intended", "actual", "impact", "fix"];
 const SEVERITY_LABELS = {
-  blocker: ["blocker", "blocking", "блокирует", "блокер"],
+  blocker: ["blocker", "blocking", "блокер", "блокирует"],
   should: ["should fix", "should-fix", "should", "желательно"],
   optional: ["optional", "nice to have", "по желанию"],
 };
 const CATEGORY = { B: "bug", I: "improvement" };
 
 const norm = (s) => s.trim().toLowerCase().replace(/\s+/g, " ");
-const lookup = (table, label) => {
+const unwrap = (s) => s.trim().replace(/^(`+|\*\*|__)([\s\S]*?)\1$/, "$2").trim();
+const severityOf = (label) => {
   const key = norm(label);
-  for (const [canon, names] of Object.entries(table)) if (names.includes(key)) return canon;
+  for (const [canon, names] of Object.entries(SEVERITY_LABELS)) if (names.includes(key)) return canon;
   return null;
 };
 
@@ -79,117 +75,125 @@ try {
 const findings = [];
 const warnings = [];
 const seen = new Set();
-let profile = null;
-let firstLine = true;
-let reviewers = [];
 let current = null;
 
 function append(key, text) {
+  if (!text) return;
   current[key] = current[key] ? `${current[key]} ${text}` : text;
 }
 
 function closeCurrent() {
   if (!current) return;
+  if (!current.file) warnings.push(`finding ${current.id}: no file:line found under the heading`);
+  if (!current.reviewers.length) warnings.push(`finding ${current.id}: no reviewer found under the heading`);
   for (const key of FIELDS) {
     if (!current[key]) warnings.push(`finding ${current.id}: no ${key} text found`);
   }
-  delete current._rows;
+  delete current._bullets;
   delete current._last;
+  delete current._located;
   findings.push(current);
   current = null;
 }
 
+function openFinding(parts) {
+  const id = unwrap(parts[0]).toUpperCase();
+  const m = id.match(FINDING_ID);
+  if (seen.has(id)) warnings.push(`finding ${id}: duplicate ID`);
+  seen.add(id);
+  let title = "";
+  let severityLabel = "";
+  if (parts.length >= 3) {
+    severityLabel = unwrap(parts[parts.length - 1]);
+    title = parts.slice(1, -1).join(" · ").trim();
+  } else {
+    title = parts.slice(1).join(" · ").trim();
+    warnings.push(`finding ${id}: heading has no severity segment; severity set to null`);
+  }
+  const severity = severityLabel ? severityOf(severityLabel) : null;
+  if (severityLabel && !severity) {
+    warnings.push(`finding ${id}: severity label "${severityLabel}" not recognized; severity set to null`);
+  }
+  current = {
+    id,
+    category: CATEGORY[m[1].toUpperCase()],
+    severity,
+    severity_label: severityLabel,
+    title,
+    reviewers: [],
+    file: "",
+    line: null,
+    intended: "",
+    actual: "",
+    impact: "",
+    fix: "",
+    _bullets: 0,
+    _last: null,
+    _located: false,
+  };
+}
+
+// `auth/login.py:42` · quality, security-audit
+function readLocation(text) {
+  const [where, ...rest] = text.split(/\s+·\s+/);
+  const loc = unwrap(where).match(LOCATION);
+  if (!loc) return false;
+  current.file = loc[1].trim();
+  current.line = Number(loc[2]);
+  current.reviewers = rest
+    .join(" · ")
+    .split(",")
+    .map((s) => unwrap(s))
+    .filter(Boolean);
+  return true;
+}
+
 for (const rawLine of raw.split(/\r?\n/)) {
   const line = rawLine.replace(/\t/g, "    ").replace(/\s+$/, "");
-  if (/^\s*```/.test(line)) continue; // tolerate the fence the report is printed in
-  if (!line) continue;
+  if (/^\s*```/.test(line)) continue; // tolerate a fence around the pasted report
+  if (!line.trim()) continue;
 
-  if (firstLine) {
-    firstLine = false;
-    const p = line.match(PROFILE);
-    if (p) profile = p[1];
-  }
-
-  const indent = line.length - line.trimStart().length;
-
-  const h = line.match(HEADER);
+  const h = line.trimStart().match(HEADING);
   if (h) {
     closeCurrent();
-    const id = `${h[1]}${h[2]}`;
-    if (seen.has(id)) warnings.push(`finding ${id}: duplicate ID`);
-    seen.add(id);
-    const severity = lookup(SEVERITY_LABELS, h[3]);
-    if (!severity) warnings.push(`finding ${id}: severity label "${h[3]}" not recognized; severity set to null`);
-    if (!reviewers.length) warnings.push(`finding ${id}: no reviewer line above it`);
-    current = {
-      id,
-      category: CATEGORY[h[1]],
-      severity,
-      severity_label: h[3],
-      reviewers: [...reviewers],
-      file: h[4],
-      line: Number(h[5]),
-      intended: "",
-      actual: "",
-      example: "",
-      fix: "",
-      _rows: 0,
-      _last: null,
-    };
+    const parts = h[1].split(/\s+·\s+/);
+    if (FINDING_ID.test(unwrap(parts[0]))) openFinding(parts);
     continue;
   }
 
-  if (indent <= 3 && HEADER_NO_LINE.test(line)) {
+  if (RULE.test(line)) {
     closeCurrent();
-    warnings.push(`finding header without file:line, skipped: "${line.trim()}"`);
     continue;
   }
 
-  if (indent === 0) {
-    // section or category heading, or the final hint line
-    closeCurrent();
-    reviewers = [];
-    continue;
-  }
+  if (!current) continue; // verdict, summary, overview table, closing sentence, hint
 
-  if (indent <= 3) {
-    const r = line.match(REVIEWER);
-    if (r) {
-      closeCurrent();
-      reviewers = r[2].split(",").map((s) => s.trim()).filter(Boolean);
-    }
-    continue;
-  }
-
-  if (!current) continue; // prose in sections 01 / 03, glossary, verdict buckets
-  const text = line.trim();
-
-  if (indent >= 9) {
-    if (current._last) append(current._last, text);
-    else warnings.push(`finding ${current.id}: continuation line before any field, ignored`);
-    continue;
-  }
-
-  // indent 4-8: a field row
-  const f = text.match(FIELD_ROW);
-  if (!f) {
-    if (current._last) append(current._last, text);
-    else warnings.push(`finding ${current.id}: unlabeled line "${text}", ignored`);
-    continue;
-  }
-  let key = lookup(FIELD_LABELS, f[1]);
-  if (!key) {
-    key = FIELDS[current._rows];
+  const b = line.match(BULLET);
+  if (b) {
+    const labelled = b[1].match(BOLD_LABEL);
+    const text = (labelled ? labelled[2] : b[1]).trim();
+    const key = FIELDS[current._bullets];
     if (!key) {
+      warnings.push(`finding ${current.id}: extra bullet appended to ${current._last}`);
       append(current._last, text);
-      warnings.push(`finding ${current.id}: extra row "${f[1]}" appended to ${current._last}`);
       continue;
     }
-    warnings.push(`finding ${current.id}: label "${f[1]}" not recognized; read as ${key} by position (translated label?)`);
+    if (!labelled) warnings.push(`finding ${current.id}: bullet ${current._bullets + 1} has no bold label; read as ${key} by position`);
+    current._bullets += 1;
+    current._last = key;
+    append(key, text);
+    continue;
   }
-  current._rows += 1;
-  append(key, f[2]);
-  current._last = key;
+
+  const text = line.trim();
+  if (!current._located && !current._last) {
+    current._located = true;
+    if (readLocation(text)) continue;
+    warnings.push(`finding ${current.id}: line under the heading is not "<file>:<line> · <reviewer>": "${text}"`);
+    continue;
+  }
+  if (current._last) append(current._last, text);
+  else warnings.push(`finding ${current.id}: unexpected line before the first bullet, ignored: "${text}"`);
 }
 closeCurrent();
 
@@ -197,6 +201,6 @@ if (findings.length === 0) {
   warnings.push("no finding blocks matched the expected format");
 }
 
-const summary = { count: findings.length, profile };
+const summary = { count: findings.length };
 process.stdout.write(JSON.stringify({ findings, summary, warnings }, null, 2) + "\n");
 process.exit(0);

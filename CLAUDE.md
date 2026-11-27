@@ -44,7 +44,7 @@ The `description` field in frontmatter is **how the agent decides to load the sk
 
 Skills here target both Claude Code and Codex CLI (declared in `targets:`). Three things bite if you ignore them:
 
-1. **Output format must render in plain terminals.** Codex CLI shows responses as raw text without a Markdown renderer, so `| col | col |` tables collapse to pipe-noise. The convention in this repo is per-finding blocks (see `skills/sl-overall-review/SKILL.md` Step 7 for the format).
+1. **Output must read well in both terminals.** Claude Code and Codex CLI (0.131+) both render standard Markdown, tables included, so a report may use headings, bold, lists and tables. Codex re-flows a table that doesn't fit the terminal into stacked records, so keep a table to a short overview (few columns, a few words per cell) and put the details in lists or prose — see `skills/sl-overall-review/SKILL.md` Step 7 for the pattern. Nothing beyond standard Markdown (raw HTML, Mermaid).
 2. **Tool availability differs.** Claude Code has `Agent` (sub-agents) and `AskUserQuestion`; Codex doesn't expose the same surface. When a SKILL.md depends on a Claude-only tool, give a Codex fallback inline rather than branching the file.
 3. **Codex stores prompts as a single `.md` file** in `~/.codex/prompts/<name>.md`. Bundled `references/` and `scripts/` are copied alongside by `npx skills` so runtime paths still work — don't assume they won't.
 

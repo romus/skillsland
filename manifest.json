@@ -6,15 +6,15 @@
     {
       "name": "sl-overall-review",
       "path": "skills/sl-overall-review",
-      "version": "0.8.0",
-      "description": "Interactively pick a base branch, pick a review profile (universal/bug-fix/feature/refactor/research/performance/security/migration/algorithm/messaging/skill/docs), and run the matching reviewers in parallel against the diff. The `skill` profile reviews prompt artifacts themselves (SKILL.md and its bundle, subagents, slash commands, CLAUDE.md) against context-engineering principles for Claude 5 generation models. Prints a terminal-friendly report: the change in plain words, the findings split into bugs and improvements (each as intended / actually / example / fix), and a merge verdict.",
+      "version": "0.9.0",
+      "description": "Interactively pick a base branch, pick a review profile (universal/bug-fix/feature/refactor/research/performance/security/migration/algorithm/messaging/skill/docs), and run the matching reviewers in parallel against the diff. The `skill` profile reviews prompt artifacts themselves (SKILL.md and its bundle, subagents, slash commands, CLAUDE.md) against context-engineering principles for Claude 5 generation models. Prints a Markdown report in the user's language: the merge verdict first, the change in plain words, an overview table of the findings, then each finding (bug or improvement) as intended / actually / why it matters / fix.",
       "targets": ["claude-code", "codex"],
       "tags": ["git", "review", "quality"]
     },
     {
       "name": "sl-gitlab-review-comments",
       "path": "skills/sl-gitlab-review-comments",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "description": "Add /sl-overall-review findings to a GitLab merge request as pending draft review notes (you submit them yourself in GitLab), inline on the diff, phrased in a suggestive register, with preview/confirm, per-run selection of findings (by ID and/or severity), idempotent re-runs, and general-note fallback for lines outside the diff.",
       "targets": ["claude-code", "codex"],
       "tags": ["git", "gitlab", "review", "merge-request", "code-review"]

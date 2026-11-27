@@ -1,7 +1,7 @@
 ---
 name: sl-overall-review
-description: This skill should be used when the user asks to "review my changes", "do an overall review", "review this branch", "code review against main", "review this skill", "review my SKILL.md", or invokes "/sl-overall-review" (optionally with a profile name like "/sl-overall-review security", "/sl-overall-review performance", "/sl-overall-review bug-fix", "/sl-overall-review skill"). Interactively asks which base branch to compare against, picks a review profile (universal, bug-fix, feature, refactor, research, performance, security, migration, algorithm, messaging, skill, docs) either from an explicit argument or by auto-detecting from the diff, runs the matching reviewers in parallel, and prints a terminal-friendly report in the user's language — a plain-language summary of what the change does, then the findings split into bugs and improvements (each as intended / actually / example / fix), then a merge verdict. The `skill` profile reviews prompt artifacts themselves — SKILL.md and its bundle, subagent and slash-command definitions, CLAUDE.md — against context-engineering principles for Claude 5 generation models. Does NOT modify code or commit — review and report only.
-version: 0.8.0
+description: This skill should be used when the user asks to "review my changes", "do an overall review", "review this branch", "code review against main", "review this skill", "review my SKILL.md", or invokes "/sl-overall-review" (optionally with a profile name like "/sl-overall-review security", "/sl-overall-review performance", "/sl-overall-review bug-fix", "/sl-overall-review skill"). Interactively asks which base branch to compare against, picks a review profile (universal, bug-fix, feature, refactor, research, performance, security, migration, algorithm, messaging, skill, docs) either from an explicit argument or by auto-detecting from the diff, runs the matching reviewers in parallel, and prints a Markdown report in the user's language — the merge verdict first, a plain-language summary of what changed, an overview table of the findings, then each finding (bug or improvement) as intended / actually / why it matters / fix. The `skill` profile reviews prompt artifacts themselves — SKILL.md and its bundle, subagent and slash-command definitions, CLAUDE.md — against context-engineering principles for Claude 5 generation models. Does NOT modify code or commit — review and report only.
+version: 0.9.0
 targets:
   - claude-code
   - codex
@@ -19,7 +19,7 @@ You are running a code review on the changes in the current git branch against a
 
 **Hard rules for the entire run:**
 - Read-only with respect to code. Do not edit files, do not stage, do not commit, do not run formatters/linters/tests that mutate state.
-- Findings are problems only — no positive observations about individual spots, no "looks good" commentary. Section 01 of the report describes the change neutrally; section 03 may say in one clause whether the change achieves its goal at its core. Nothing else describes the change as a whole.
+- Findings are problems only — no positive observations about individual spots, no "looks good" commentary. The report's "What changed" block describes the change neutrally; its closing sentence may say whether the change achieves its goal at its core. Nothing else describes the change as a whole.
 - Never apply fixes in this run. The report's last line is a one-line hint of what the user can reply to get findings fixed — that is the only mention of fixing. If the user later sends that reply, it is a new request outside this run.
 - Final output is the report in the Step 7 layout, in the language of the user's most recent request (default English if unclear). Nothing after the final hint line.
 
@@ -65,16 +65,13 @@ git diff "$MERGE_BASE"...HEAD
 git log "$MERGE_BASE"..HEAD --oneline
 ```
 
-Keep the `--stat`, full diff, name-only list, and oneline log as **shared context** that every reviewer will receive in Step 5. Keep the `--shortstat` numbers for the report header (Step 7).
+Keep the `--stat`, full diff, name-only list, and oneline log as **shared context** that every reviewer will receive in Step 5. Keep the `--shortstat` numbers for the report's stats line (Step 7).
 
 If `git merge-base` fails (unrelated histories) or the diff is empty, report this and stop — there is nothing to review.
 
 If the full diff is very large, sample it for the reviewer briefings, but make sure every changed file is visible in `--stat` and that reviewers re-read the actual file at the location of each finding (Step 6).
 
-**Understand the change before anyone reviews it.** From the commit messages, the branch name and the diff itself, write down for yourself:
-
-- a one-line human title for the change (what it is for, not which files it touches);
-- the section-01 text of the report (Step 7): how things were and what the problem was, then what the change does now — in plain words for someone who has not seen the code.
+**Understand the change before anyone reviews it.** From the commit messages, the branch name and the diff itself, write down for yourself the "What changed" text of the report (Step 7): two or three sentences on how things were before and what is different now — in plain words for someone who has not seen the code.
 
 This understanding is also where every finding's `intended` line comes from (Step 6). Do **not** pass it to the reviewers: it is your interpretation, and handing it over would anchor the lenses that must judge the diff against the stated task on their own (`scope-creep`, `implementation`).
 
@@ -131,11 +128,13 @@ For every finding returned by every reviewer:
    - **improvement** — the code does what it should, but could be better: performance, readability, tests, docs, dead code, simplification.
 
    Only a bug can be a `blocker` — an "improvement" that would block the merge is really a bug.
-6. **Rewrite each finding into the four fields** the report shows (Step 7):
+6. **Rewrite each finding into what the report shows** (Step 7) — a title, a gist, and four fields of one or two short sentences each:
+   - title — the problem in one short phrase, for the finding's heading.
+   - gist — the same in three to five words, for the overview table.
    - `intended` — what the change set out to do at this spot, from your Step 3 understanding. For a pre-existing issue, the behavior that is expected here.
    - `actually` — what the code really does, from the reviewer's issue description, corrected by your re-read.
-   - `example` — a concrete scenario built from the reviewer's impact and scenario and your re-read of the code: realistic inputs and numbers, steps joined with `→`, and a last line stating the consequence a user or the system sees. For an improvement, the realistic situation where it bites (load, a later edit, a regression nobody catches).
-   - `fix` — one sentence: the reviewer's fix, condensed.
+   - `why it matters` — what this leads to, shown on one concrete case built from the reviewer's impact and scenario and your re-read of the code: a realistic input and the consequence a user or the system sees. For an improvement, the realistic situation where it bites (load, a later edit, a regression nobody catches).
+   - `fix` — one concrete action that can be carried out right away, not a wish: the reviewer's fix, condensed.
 
    Write for someone who has not seen the code. Use a code identifier only where it helps, in parentheses after the plain word — "the token we present to the client's server (the `Authorization` header)".
 
@@ -145,107 +144,65 @@ Pre-existing issues that a reviewer surfaced are still valid; include them. Do n
 
 ## Step 7 — Output the report (this is the entire user-facing reply)
 
-Output **only** the report below, wrapped in one plain ```` ``` ```` fence (no language tag): the fence keeps the column alignment in Claude Code's Markdown renderer, and Codex CLI prints it as plain text. No preamble, no recap of what you did, nothing after the final hint line. Markdown tables are not used on purpose — they collapse into unreadable pipe-noise without a renderer.
+Output **only** the report below, as standard Markdown and not inside a code fence — the table and the headings have to render, and both Claude Code and Codex CLI render them. No preamble, no recap of what you did, nothing after the final hint line.
 
-**Layout** (English labels; translate them — see **Language** below):
-
-```
-CODE REVIEW · <branch> → <base> · <N> files · +<added> −<deleted> · profile: <profile>
-
-<Title — the change in one human line>
-
-
-01  THE CHANGE — IN PLAIN WORDS
-
-    <How things were, and what the problem was.>
-
-    <What the change does now.>
-
-    <term>      <plain explanation>
-
-
-02  FINDINGS   <b> bugs · <i> improvements · <k> block the merge
-
-BUGS
-
-  Reviewer: <reviewer>[, <reviewer>]
-
-  B1  blocker     <file:line>
-      intended  <what the change meant to do here>
-      actually  <what the code really does>
-      example   <step → step → step>
-                <the consequence>
-      fix       <one sentence>
-
-IMPROVEMENTS
-
-  Reviewer: <reviewer>
-
-  I1  optional    <file:line>
-      intended  …
-      actually  …
-      example   …
-      fix       …
-
-
-03  VERDICT
-
-    <One line: "Don't merge yet: fix B1 and B3 first." / "OK to merge.">
-
-    <1–3 sentences: is the goal met at its core; what the blockers risk.>
-
-    blocker     B1 · B3
-    should fix  B2 · I1
-    optional    I2 · I3
-
-To fix, reply: fix B1 B3
-```
-
-**Columns.** `sl-gitlab-review-comments` parses this report by indentation, not by words, so the indents are a contract:
-
-- column 0 — the header line, the title, section headings (`01`/`02`/`03`), category headings (`BUGS`/`IMPROVEMENTS`), the final hint line;
-- 2 spaces — the `Reviewer:` line and each finding header `<ID>  <severity>  <file:line>`;
-- 4 spaces — prose and glossary in 01 and 03, and the verdict buckets;
-- 6 spaces — field rows; their continuation lines are indented to the field's text column.
-
-Put two spaces after the ID. Pad the severity label so that at least two spaces precede `file:line`, and pad field labels to the longest label plus two spaces. Spaces inside a label stay single (`на деле`, `should fix`). Keep lines within 80 columns: wrap prose and field text, with continuation lines indented to the text column (only the header line may run longer).
-
-**Content rules:**
-
-- **Header** — branch, base, file count and `+/−` from `--shortstat`, and the profile exactly as announced in Step 4 (base profile plus any `+ add-on`).
-- **01** — two short paragraphs from your Step 3 understanding, no jargon. The glossary is 0–3 terms, and only terms that appear later in the report; drop it when nothing needs explaining.
-- **IDs** — `B1`, `B2`, … for bugs and `I1`, `I2`, … for improvements, numbered separately. The letters `B`/`I` stay Latin in every language.
-- **Location** — exact file path and line number. For a missing test, cite the untested code's `file:line`.
-- **Order** — bugs before improvements. Inside a category, order reviewer groups by their most severe finding, then by reviewer name; inside a group, by severity (`blocker` → `should fix` → `optional`), then by file path. Numbering follows the final order. A finding merged from several reviewers (Step 6) forms its own group under its comma-separated names.
-- **Counts** — the `02` heading counts bugs, improvements and blockers, with grammatical plurals in the user's language; drop the blocker segment when there are none.
-- **Verdict** — the bucket lines list IDs by severity; omit an empty bucket.
-- **Hint** — the last line lists the blocker IDs; if there are none, the `should fix` IDs; if there are none either, omit the line.
-- **No findings** — print the header, the title and 01 as usual, then `02  FINDINGS   none`, then `03  VERDICT` with "OK to merge." and no bucket lines and no hint line.
-
-**Language.** Translate every label into the language of the user's most recent message (English if unclear). File paths, code identifiers, reviewer names (`quality`, `security-audit`) and the IDs stay verbatim. Russian labels:
-
-- `КОД-РЕВЬЮ` · `<N> файлов` · `профиль:`
-- `01  ЗАДАЧА — НА ПАЛЬЦАХ` · `02  ЗАМЕЧАНИЯ` · `03  ВЫВОД`
-- `БАГИ` / `УЛУЧШЕНИЯ` · `Ревьюер:`
-- `блокирует` / `желательно` / `по желанию`
-- `хотели` / `на деле` / `пример` / `поправить`
-- `Чтобы поправить, ответьте: поправь B1 B3`
-
-One finding in Russian, for the register:
+**Template** (English labels; translate them — see **Language** below):
 
 ```
-  B1  блокирует   src/webhooks/retry.ts:48
-      хотели     Повторять отправку не больше 5 раз.
-      на деле    Попытка засчитывается только после отправки: отправщик
-                 упал посреди отправки — попытка не засчитана.
-      пример     Клиенту оплатили заказ → шлём сообщение → отправщик
-                 падает → перезапуск, счётчик всё ещё 0 → шлём снова →
-                 и так без конца.
-                 Очередь стоит, сообщения остальным клиентам не уходят.
-      поправить  Увеличивать счётчик попыток до отправки, а не после.
+**<Verdict>.** <how many blockers, and their IDs>
+
+**What changed**
+
+<2–3 sentences in plain language: how it was before and what is different now.>
+
+`<branch> → <base>` · <N> files · +<added> −<deleted>
+
+| ID | Severity | Reviewer | Where | Summary |
+|----|----------|----------|-------|---------|
+| B1 | blocker | <reviewer> | `<file:line>` | <the gist in 3–5 words> |
+
+---
+
+### <ID> · <Finding title> · <severity>
+`<path/to/file:line>` · <reviewer>
+
+- **Intended:** <what the change was trying to do>
+- **Actually:** <what really came out>
+- **Why it matters:** <what it leads to, on a concrete example>
+- **Fix:** <one concrete action>
+
+---
+
+<One sentence: is the task solved at its core, and what stands in the way.>
+To fix, reply: `fix <ID>`
 ```
 
-That's the whole response. Stop after the hint line (or after the verdict when there is no hint).
+**Rules:**
+
+1. **The verdict is always the first line:** "Don't merge" or "OK to merge", then the number of blockers and their IDs. With no blockers, say so: "No blockers".
+2. **"What changed"** has no jargon and no file names — written so that someone who has not seen the code understands it.
+3. **IDs:** bugs are `B1`, `B2`, …; improvements are `I1`, `I2`, …; each type is numbered on its own. The letters `B`/`I` stay Latin in every language.
+4. **Severity** is one of three values: `blocker`, `should fix`, `optional` (Step 6). Findings go in that order both in the table and below it; within one severity, bugs before improvements, then by file path. Numbering follows that final order.
+5. **The table is an overview only:** at most five words in "Summary", and "Where" is the file name and line without the directory path. Details belong in the finding itself.
+6. **A finding always has the four bullets** in the same order: Intended, Actually, Why it matters, Fix. One or two short sentences each.
+7. **"Fix"** is an action that can be carried out right away, not a wish.
+8. **No emoji, no all-caps, no numbered sections.** Emphasis only with bold and `code`.
+9. **File names, versions, commands and the reply phrase** are formatted as `code`.
+10. **With no findings,** output only the verdict, the "What changed" block with its stats line, and the closing sentence — no table, no `---` rules, no hint line.
+
+**Details the template leaves open:**
+
+- **Stats line** — branch, base, file count and `+/−` from `--shortstat` (Step 3).
+- **Location** — the line under a finding's heading carries the full file path and line number. For a missing test, cite the untested code's `file:line`.
+- **Reviewer** — a finding merged from several reviewers (Step 6) lists all their names, comma-separated, in the table and under the heading.
+- **Rules** — one `---` after the table and one after the last finding; none between findings.
+- **Hint** — the last line lists the blocker IDs (`fix B1 B3`); if there are none, the `should fix` IDs; if there are none either, the remaining IDs.
+
+**Contract.** `sl-gitlab-review-comments` parses the findings by their structure, so keep exactly: the heading `### <ID> · <title> · <severity>`, the location line directly under it, and the four bullets in that order, each opening with a bold label.
+
+**Language.** Translate every label and fixed phrase — the verdict, "What changed", the table header, the severity values, the bullet labels, the hint — into the language of the user's most recent message (English if unclear). File paths, code identifiers, reviewer names (`quality`, `security-audit`) and the IDs stay verbatim.
+
+That's the whole response. Stop after the hint line (or after the closing sentence when there are no findings).
 
 ---
 

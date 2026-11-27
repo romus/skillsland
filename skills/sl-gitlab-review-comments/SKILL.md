@@ -1,7 +1,7 @@
 ---
 name: sl-gitlab-review-comments
-description: This skill should be used when the user asks to "post the review to GitLab", "comment on the MR", "push review comments to GitLab", "add the findings as inline comments", or invokes "/sl-gitlab-review-comments". Takes the findings from the /sl-overall-review report (B1…/I1… blocks with intended / actually / example / fix) and adds them to the matching GitLab Merge Request as pending draft review notes — inline on the diff where possible — phrased in a suggestive register and formatted as Markdown (code is wrapped so GitLab highlights it); you eyeball them in the GitLab UI and click "Submit review" to publish. Mandatory preview-and-confirm gate, per-run selection of which findings to post (explicit finding IDs and/or a severity threshold), idempotent re-runs, and a general-note fallback for lines outside the MR diff. Detects transport (glab CLI, GitLab MCP, then REST). Read-only on local code; the only external write is creating draft notes — it never publishes or submits the review.
-version: 0.4.0
+description: This skill should be used when the user asks to "post the review to GitLab", "comment on the MR", "push review comments to GitLab", "add the findings as inline comments", or invokes "/sl-gitlab-review-comments". Takes the findings from the /sl-overall-review report (B1…/I1… finding blocks with intended / actually / why it matters / fix) and adds them to the matching GitLab Merge Request as pending draft review notes — inline on the diff where possible — phrased in a suggestive register and formatted as Markdown (code is wrapped so GitLab highlights it); you eyeball them in the GitLab UI and click "Submit review" to publish. Mandatory preview-and-confirm gate, per-run selection of which findings to post (explicit finding IDs and/or a severity threshold), idempotent re-runs, and a general-note fallback for lines outside the MR diff. Detects transport (glab CLI, GitLab MCP, then REST). Read-only on local code; the only external write is creating draft notes — it never publishes or submits the review.
+version: 0.5.0
 targets:
   - claude-code
   - codex
@@ -27,30 +27,30 @@ You take the findings that `/sl-overall-review` produced in this conversation an
 
 ## Step 0 — Preconditions
 
-Confirm there is an `/sl-overall-review` report to work with **in this conversation** — finding blocks of the form `<ID>  <severity>  <file:line>` (IDs `B1`, `B2`, … for bugs and `I1`, `I2`, … for improvements, under a `Reviewer:` line), each followed by four rows: intended / actually / example / fix (translated in the user's language, e.g. `хотели` / `на деле` / `пример` / `поправить`). If there is none, tell the user to run `/sl-overall-review` first (or paste its output), and stop. Do not invent findings.
+Confirm there is an `/sl-overall-review` report to work with **in this conversation** — finding blocks that open with a heading `### <ID> · <title> · <severity>` (IDs `B1`, `B2`, … for bugs and `I1`, `I2`, … for improvements), then a line `` `<file:line>` · <reviewer> ``, then four bullets: intended / actually / why it matters / fix (their labels are in the user's language). If there is none, tell the user to run `/sl-overall-review` first (or paste its output), and stop. Do not invent findings.
 
 ---
 
 ## Step 1 — Parse the findings
 
-Pipe the report text — whole, exactly as printed, indentation intact (the parser reads it by indentation) — into the bundled parser (quoted heredoc so nothing is shell-expanded):
+Pipe the report text — whole, exactly as printed (the parser reads it by its Markdown structure, in any language) — into the bundled parser (quoted heredoc so nothing is shell-expanded):
 
 ```bash
 node "${SKILL_DIR:-$(dirname "$0")}/scripts/parse-findings.mjs" <<'FINDINGS'
-CODE REVIEW · feat/login → main · 3 files · +40 −2 · profile: security
+**Don't merge.** 1 blocker: B1
 ...
-  Reviewer: security-audit
+### B1 · Login query is open to injection · blocker
+`auth/login.py:42` · security-audit
 
-  B1  blocker     auth/login.py:42
-      intended  ...
-      actually  ...
-      example   ...
-      fix       ...
+- **Intended:** ...
+- **Actually:** ...
+- **Why it matters:** ...
+- **Fix:** ...
 ...
 FINDINGS
 ```
 
-Parse the JSON: `{findings:[{id,category,severity,severity_label,reviewers,file,line,intended,actual,example,fix}], summary:{count,profile}, warnings}`. `category` is `bug` | `improvement`; `severity` is `blocker` | `should` | `optional`, or `null` when the printed label wasn't recognized; `severity_label` is the label as printed. Surface any `warnings`; for a `null` severity, map `severity_label` to one of the three yourself by its meaning, and say so. If `findings` is empty, report that and stop.
+Parse the JSON: `{findings:[{id,category,severity,severity_label,title,reviewers,file,line,intended,actual,impact,fix}], summary:{count}, warnings}`. `category` is `bug` | `improvement`; `severity` is `blocker` | `should` | `optional`, or `null` when the printed label wasn't recognized; `severity_label` is the label as printed. The four bullets are read by position, so `impact` is the third one ("why it matters"). Surface any `warnings`; for a `null` severity, map `severity_label` to one of the three yourself by its meaning, and say so. If `findings` is empty, report that and stop — and if the report has findings in the older indented layout (`sl-overall-review` before `0.9.0`), say that it needs to be re-run with the current version.
 
 ---
 
@@ -88,7 +88,7 @@ First print the full list so the user can see what's on offer — one line each:
 Then ask what to post. **Not just categories — explicit IDs too:**
 
 - **Claude Code:** call `AskUserQuestion` with options: "All", "Blocker + should fix", "Only blockers", and "Pick IDs" (option labels in the user's language). For "Pick IDs" the user types via the free-text "Other" field, e.g. `B1,B3,I2` or `B1-B3,I1`.
-- **Codex / plain CLI:** print a numbered menu and read one line from stdin. Accept: a list of IDs (`B1,I2`), ranges within one letter (`B1-B3`), `all`, or a severity keyword used as a minimum threshold (`blocker`/`блокирует`, `should`/`желательно`, `optional`/`по желанию`).
+- **Codex / plain CLI:** print a numbered menu and read one line from stdin. Accept: a list of IDs (`B1,I2`), ranges within one letter (`B1-B3`), `all`, or a severity keyword used as a minimum threshold (`blocker`/`блокер`, `should`/`желательно`, `optional`/`по желанию`).
 
 Resolve the answer to a concrete set of finding IDs: a severity threshold expands to the IDs of all findings at or above it (`blocker` → `should` → `optional`); explicit IDs select exactly those. IDs are case-insensitive (`b1` = `B1`). Everything downstream operates only on the selected findings.
 
@@ -112,21 +112,21 @@ Compute a stable fingerprint per finding, `fp = sha8(file|line|actual)` (first 8
 
 **<actually label>:** <actual>
 
-**<example label>:** <example>
+**<why-it-matters label>:** <impact>
 
 **<suggestive fix label>:** <fix>
 ```
 
 - **Markdown, not plain text.** Separate the header and the four rows with **blank lines** (so they render as distinct paragraphs regardless of the instance's soft-break setting) and **bold** the labels. Wrap any code in the text so GitLab highlights it: short identifiers/expressions in inline `` `backticks` ``; a multi-line snippet in a fenced block ```` ```<lang> … ``` ````, with `<lang>` inferred from the cited file's extension (`.py`→`python`, `.ts`→`ts`, `.js`→`js`, `.go`→`go`, `.rb`→`ruby`, `.java`→`java`, …; bare ```` ``` ```` if unknown). Optional: when the fix is a literal drop-in replacement for the cited line on an inline anchor, the fenced block may be a ```` ```suggestion ```` block.
 - **No reviewer attribution in the body.** The header is just the severity label as printed — do **not** print the reviewer name, the `B1`/`I1` ID, or "sl-overall-review". (The reviewer and ID still appear in the Step 4 list, Step 6 preview, and Step 9 report so you can tell findings apart — they are only kept out of what lands on the MR.)
-- Use labels **in the same language as the finding text**. Examples — RU: `Хотели:` / `На деле:` / `Пример:` / `Как можно поправить:` · EN: `Intended:` / `Actually:` / `Example:` / `Suggested fix:`.
+- Use the labels **as the report printed them**, so they match the language of the finding text; only the fix label is rephrased as a suggestion. Examples — EN: `Intended:` / `Actually:` / `Why it matters:` / `Suggested fix:` · RU: `Хотели:` / `Получилось:` / `Чем плохо:` / `Как можно поправить:`.
 - **Keep it lean.** The severity header plus those four rows, with the wording **verbatim** from sl-overall-review — only adding Markdown code markup around code, never rewording. Do not add extra commentary, hedging, or prose — short comments are the goal. Do not add a "draft" tag in the text; GitLab already badges pending notes.
 
 ---
 
 ## Step 6 — Build the preview
 
-For every surviving finding, show exactly what will happen — plain-text blocks, one per line, **no Markdown tables** (they collapse in plain terminals). Everything is a draft note:
+For every surviving finding, show exactly what will happen — plain-text blocks, one per line, no tables. Everything is a draft note:
 
 ```
 B1 blocker · security-audit · auth/login.py:42   → inline draft (added line)
@@ -204,6 +204,6 @@ For a dry-run, use the same layout under a `DRY RUN — nothing drafted:` header
 
 ## Bundled resources
 
-- `scripts/parse-findings.mjs` — report text (stdin) → normalized JSON, parsed by indentation (Step 1)
+- `scripts/parse-findings.mjs` — report text (stdin) → normalized JSON, parsed by Markdown structure (Step 1)
 - `scripts/post-comment.mjs` — REST poster; reads `GITLAB_TOKEN` from env, classifies + dedupes, creates draft notes (Step 8)
 - `references/gitlab-api.md` — endpoints, position rule, hunk-parsing rule, glab form, token-security notes, script contracts
